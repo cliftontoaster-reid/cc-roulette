@@ -33,7 +33,7 @@ end
 print("Monitor supports color")
 
 print("Setting monitor text scale to 0.7")
-mon.setTextScale(1)
+mon.setTextScale(0.7)
 
 local w, h = mon.getSize()
 print("Monitor size: " .. w .. "x" .. h)
@@ -77,17 +77,37 @@ local function printBet(nbr, idx, posx)
 end
 
 -- Global variables for number display configuration
-local NUMBER_SPACING = 9   -- Distance between numbers
-local NUMBER_WIDTH = 6     -- Width of the number display area
-local SPECIAL_SPACING = 12 -- Distance between special displays
-local SPECIAL_WIDTH = 10   -- Width of the special display area
+local NUMBER_SPACING = 9                          -- Distance between numbers
+local NUMBER_WIDTH = 6                            -- Width of the number display area
+local SPECIAL_SPACING = (NUMBER_SPACING * 12) / 6 -- Distance between special displays
+local SPECIAL_WIDTH = SPECIAL_SPACING * 0.85      -- Width of the special display area
+
+
+-- Assign values above 50 for special options
+local specialValues = {
+    ["1st 12"] = 51,
+    ["2nd 12"] = 52, -- Fixed typo from "2st" to "2nd"
+    ["3rd 12"] = 53, -- Fixed typo from "3st" to "3rd"
+    ["1 to 18"] = 54,
+    ["Even"] = 55,
+    ["Red"] = 56,
+    ["Black"] = 57,
+    ["Odd"] = 58,
+    ["19 to 36"] = 59
+}
+
+local special = {
+    --    "1st 12", "2nd 12", "3rd 12", -- Fixed typos
+    "1 to 18", "Even", "Red",
+    "Black", "Odd", "19 to 36"
+}
 
 -- Helper function to print a range of numbers
 ---@param rowPos number The row to print the numbers on
 ---@param startNum number The first number to print
 ---@param endNum number The last number to print
 ---@return nil
-local function printNumberRange(rowPos, startNum, endNum)
+local function printNumberRange(rowPos, startNum, endNum, special)
     mon.setCursorPos(1, rowPos)
     for i = startNum, endNum do
         local posx = (i - startNum) * NUMBER_SPACING
@@ -107,26 +127,13 @@ local function printNumberRange(rowPos, startNum, endNum)
 
         printBet(i, rowPos + 2, posx + 2)
     end
+
+    local posx = (endNum - startNum + 1) * NUMBER_SPACING
+    mon.setCursorPos(posx + 2, rowPos + 1)
+    mon.setBackgroundColour(colours.black)
+    mon.write("  " .. special .. "  ")
+    printBet(specialValues[special], rowPos + 2, posx + 2)
 end
-
--- Assign values above 50 for special options
-local specialValues = {
-    ["1st 12"] = 51,
-    ["2nd 12"] = 52, -- Fixed typo from "2st" to "2nd"
-    ["3rd 12"] = 53, -- Fixed typo from "3st" to "3rd"
-    ["1 to 18"] = 54,
-    ["Even"] = 55,
-    ["Red"] = 56,
-    ["Black"] = 57,
-    ["Odd"] = 58,
-    ["19 to 36"] = 59
-}
-
-local special = {
-    "1st 12", "2nd 12", "3rd 12", -- Fixed typos
-    "1 to 18", "Even", "Red",
-    "Black", "Odd", "19 to 36"
-}
 
 local function printSpecial(rowPos, startNum, endNum)
     mon.setCursorPos(1, rowPos)
@@ -161,21 +168,26 @@ local function update()
     end
 
     -- Print the three number ranges
-    printNumberRange(1, 1, 12)
-    printNumberRange(11, 13, 24)
-    printNumberRange(21, 25, 36)
+    printNumberRange(1, 1, 12, "1st 12")
+    printNumberRange(11, 13, 24, "2nd 12")
+    printNumberRange(21, 25, 36, "3rd 12")
 
     -- Print the special bets
-    printSpecial(31, 1, 9)
+    printSpecial(31, 1, 6)
 end
 
 local function findClickedNumber(x, y)
     -- Check for regular numbers (1-36) first
+
+    local specx = x - NUMBER_SPACING * 12
     if y >= 1 and y <= 10 then
         -- First row: Numbers 1-12
         local col = math.floor((x - 2) / NUMBER_SPACING)
         if col >= 0 and col < 12 then
             return col + 1
+        end
+        if specx >= 0 and specx <= 11 then
+            return specialValues["1st 12"]
         end
     elseif y >= 11 and y <= 20 then
         -- Second row: Numbers 13-24
@@ -183,11 +195,17 @@ local function findClickedNumber(x, y)
         if col >= 0 and col < 12 then
             return col + 13
         end
+        if specx >= 0 and specx <= 11 then
+            return specialValues["2nd 12"]
+        end
     elseif y >= 21 and y <= 30 then
         -- Third row: Numbers 25-36
         local col = math.floor((x - 2) / NUMBER_SPACING)
         if col >= 0 and col < 12 then
             return col + 25
+        end
+        if specx >= 0 and specx <= 11 then
+            return specialValues["3rd 12"]
         end
     elseif y >= 31 and y <= 40 then
         -- Special bets row

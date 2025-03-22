@@ -49,14 +49,68 @@ local grid = {}
 ---@type Bet[]
 local bets = {}
 
----@param nbr number The number of the bets to print, don't ask
+-- Global variables for display configuration
+local NUMBER_SPACING = 9                          -- Distance between numbers
+local NUMBER_WIDTH = 6                            -- Width of the number display area
+local DOZEN_WIDTH = 10                            -- Width for dozen columns (1st 12, etc.)
+local SPECIAL_SPACING = (NUMBER_SPACING * 12) / 6 -- Distance between special displays
+local SPECIAL_WIDTH = SPECIAL_SPACING * 0.85      -- Width of the special display area
+
+-- Assign values above 50 for special options
+local specialValues = {
+    ["1st 12"] = 51,
+    ["2nd 12"] = 52,
+    ["3rd 12"] = 53,
+    ["1 to 18"] = 54,
+    ["Even"] = 55,
+    ["Red"] = 56,
+    ["Black"] = 57,
+    ["Odd"] = 58,
+    ["19 to 36"] = 59
+}
+
+-- Define the table layout
+local layout = {
+    {
+        rowPos = 1,
+        items = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 },
+        special = "1st 12",
+        spacing = NUMBER_SPACING,
+        itemWidth = NUMBER_WIDTH,
+        specialWidth = DOZEN_WIDTH
+    },
+    {
+        rowPos = 11,
+        items = { 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24 },
+        special = "2nd 12",
+        spacing = NUMBER_SPACING,
+        itemWidth = NUMBER_WIDTH,
+        specialWidth = DOZEN_WIDTH
+    },
+    {
+        rowPos = 21,
+        items = { 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36 },
+        special = "3rd 12",
+        spacing = NUMBER_SPACING,
+        itemWidth = NUMBER_WIDTH,
+        specialWidth = DOZEN_WIDTH
+    },
+    {
+        rowPos = 31,
+        items = { "1 to 18", "Even", "Red", "Black", "Odd", "19 to 36" },
+        spacing = SPECIAL_SPACING,
+        itemWidth = SPECIAL_WIDTH
+    }
+}
+
+---@param nbr number The bet number to print
 ---@param idx number Where to start printing the bets
 ---@param posx number The x position to print the bets
 ---@return nil
 local function printBet(nbr, idx, posx)
     local usedBets = {}
 
-    for i, v in pairs(bets) do
+    for _, v in pairs(bets) do
         if v.number == nbr then
             print("Match found: adding bet from " .. v.player .. " for " .. v.amount)
             table.insert(usedBets, v)
@@ -76,84 +130,50 @@ local function printBet(nbr, idx, posx)
     end
 end
 
--- Global variables for number display configuration
-local NUMBER_SPACING = 9                          -- Distance between numbers
-local NUMBER_WIDTH = 6                            -- Width of the number display area
-local SPECIAL_SPACING = (NUMBER_SPACING * 12) / 6 -- Distance between special displays
-local SPECIAL_WIDTH = SPECIAL_SPACING * 0.85      -- Width of the special display area
-
-
--- Assign values above 50 for special options
-local specialValues = {
-    ["1st 12"] = 51,
-    ["2nd 12"] = 52, -- Fixed typo from "2st" to "2nd"
-    ["3rd 12"] = 53, -- Fixed typo from "3st" to "3rd"
-    ["1 to 18"] = 54,
-    ["Even"] = 55,
-    ["Red"] = 56,
-    ["Black"] = 57,
-    ["Odd"] = 58,
-    ["19 to 36"] = 59
-}
-
-local special = {
-    --    "1st 12", "2nd 12", "3rd 12", -- Fixed typos
-    "1 to 18", "Even", "Red",
-    "Black", "Odd", "19 to 36"
-}
-
--- Helper function to print a range of numbers
----@param rowPos number The row to print the numbers on
----@param startNum number The first number to print
----@param endNum number The last number to print
----@return nil
-local function printNumberRange(rowPos, startNum, endNum, special)
-    mon.setCursorPos(1, rowPos)
-    for i = startNum, endNum do
-        local posx = (i - startNum) * NUMBER_SPACING
-        local ncol = (i % 2 == 0) and colours.red or colours.black
-        mon.setBackgroundColour(ncol)
-
-        -- Format based on number range
-        local numStr
-        if i < 10 then
-            numStr = string.rep(" ", (NUMBER_WIDTH) / 2) .. i .. string.rep(" ", (NUMBER_WIDTH - 1) / 2)
-        else
-            numStr = string.rep(" ", (NUMBER_WIDTH - 2) / 2) .. i .. string.rep(" ", (NUMBER_WIDTH - 2) / 2)
-        end
-
-        mon.setCursorPos(posx + 2, rowPos + 1)
-        mon.write(numStr)
-
-        printBet(i, rowPos + 2, posx + 2)
-    end
-
-    local posx = (endNum - startNum + 1) * NUMBER_SPACING
-    mon.setCursorPos(posx + 2, rowPos + 1)
-    mon.setBackgroundColour(colours.black)
-    mon.write("  " .. special .. "  ")
-    printBet(specialValues[special], rowPos + 2, posx + 2)
+---@param item any The item (number or text) to display
+---@param width number The width of the display area
+---@return string The formatted text with proper padding
+local function formatDisplayText(item, width)
+    local text = tostring(item)
+    local strLen = string.len(text)
+    local leftPad = math.floor((width - strLen) / 2)
+    local rightPad = width - strLen - leftPad
+    return string.rep(" ", leftPad) .. text .. string.rep(" ", rightPad)
 end
 
-local function printSpecial(rowPos, startNum, endNum)
-    mon.setCursorPos(1, rowPos)
-    for i = startNum, endNum do
-        local posx = (i - startNum) * SPECIAL_SPACING
-        local ncol = (i % 2 == 0) and colours.red or colours.black
-        mon.setBackgroundColour(ncol)
+---@param rowDef table The row definition containing position and items
+---@return nil
+local function printRow(rowDef)
+    mon.setCursorPos(1, rowDef.rowPos)
 
-        -- Format based on special label
-        local label = special[i - startNum + 1]
-        local strLen = string.len(label)
-        local leftPad = math.floor((SPECIAL_WIDTH - strLen) / 2)
-        local rightPad = SPECIAL_WIDTH - strLen - leftPad
-        local numStr = string.rep(" ", leftPad) .. label .. string.rep(" ", rightPad)
+    -- Print the regular items in the row
+    for i, item in ipairs(rowDef.items) do
+        local posx = (i - 1) * rowDef.spacing
 
-        mon.setCursorPos(posx + 2, rowPos + 1)
-        mon.write(numStr)
+        -- Set color based on whether it's a number or special item
+        if type(item) == "number" then
+            mon.setBackgroundColour(item % 2 == 0 and colours.red or colours.black)
+        else
+            mon.setBackgroundColour((i % 2 == 0) and colours.red or colours.black)
+        end
 
-        -- Print bet using the special value instead of position
-        printBet(specialValues[label], rowPos + 2, posx + 2)
+        mon.setCursorPos(posx + 2, rowDef.rowPos + 1)
+        mon.write(formatDisplayText(item, rowDef.itemWidth))
+
+        -- Determine the bet number - either the number itself or its special value
+        local betNumber = type(item) == "number" and item or specialValues[item]
+        printBet(betNumber, rowDef.rowPos + 2, posx + 2)
+    end
+
+    -- Print the special column if specified
+    if rowDef.special then
+        local posx = #rowDef.items * rowDef.spacing
+        mon.setCursorPos(posx + 2, rowDef.rowPos + 1)
+        mon.setBackgroundColour(colours.black)
+        -- Use specialWidth if defined, otherwise fall back to itemWidth
+        local displayWidth = rowDef.specialWidth or rowDef.itemWidth
+        mon.write(formatDisplayText(rowDef.special, displayWidth))
+        printBet(specialValues[rowDef.special], rowDef.rowPos + 2, posx + 2)
     end
 end
 
@@ -161,59 +181,36 @@ local function update()
     mon.clear()
     mon.setBackgroundColour(colours.green)
     mon.setTextColour(colours.white)
-    -- fill the screen with green
+
+    -- Fill the screen with green
     for i = 1, h do
         mon.setCursorPos(1, i)
         mon.write(string.rep(" ", w))
     end
 
-    -- Print the three number ranges
-    printNumberRange(1, 1, 12, "1st 12")
-    printNumberRange(11, 13, 24, "2nd 12")
-    printNumberRange(21, 25, 36, "3rd 12")
-
-    -- Print the special bets
-    printSpecial(31, 1, 6)
+    -- Print all rows according to layout
+    for _, rowDef in ipairs(layout) do
+        printRow(rowDef)
+    end
 end
 
 local function findClickedNumber(x, y)
-    -- Check for regular numbers (1-36) first
+    -- Check each row in the layout to find what was clicked
+    for _, rowDef in ipairs(layout) do
+        if y >= rowDef.rowPos and y <= rowDef.rowPos + 9 then
+            -- Check for regular items
+            local col = math.floor((x - 2) / rowDef.spacing)
+            if col >= 0 and col < #rowDef.items then
+                local item = rowDef.items[col + 1]
+                return type(item) == "number" and item or specialValues[item]
+            end
 
-    local specx = x - NUMBER_SPACING * 12
-    if y >= 1 and y <= 10 then
-        -- First row: Numbers 1-12
-        local col = math.floor((x - 2) / NUMBER_SPACING)
-        if col >= 0 and col < 12 then
-            return col + 1
-        end
-        if specx >= 0 and specx <= 11 then
-            return specialValues["1st 12"]
-        end
-    elseif y >= 11 and y <= 20 then
-        -- Second row: Numbers 13-24
-        local col = math.floor((x - 2) / NUMBER_SPACING)
-        if col >= 0 and col < 12 then
-            return col + 13
-        end
-        if specx >= 0 and specx <= 11 then
-            return specialValues["2nd 12"]
-        end
-    elseif y >= 21 and y <= 30 then
-        -- Third row: Numbers 25-36
-        local col = math.floor((x - 2) / NUMBER_SPACING)
-        if col >= 0 and col < 12 then
-            return col + 25
-        end
-        if specx >= 0 and specx <= 11 then
-            return specialValues["3rd 12"]
-        end
-    elseif y >= 31 and y <= 40 then
-        -- Special bets row
-        local col = math.floor((x - 2) / SPECIAL_SPACING)
-        if col >= 0 and col < 9 then
-            local specialName = special[col + 1]
-            if specialName then
-                return specialValues[specialName]
+            -- Check for special column
+            if rowDef.special then
+                local specialX = x - rowDef.spacing * #rowDef.items
+                if specialX >= 0 and specialX <= (rowDef.specialWidth or rowDef.itemWidth) + 2 then
+                    return specialValues[rowDef.special]
+                end
             end
         end
     end

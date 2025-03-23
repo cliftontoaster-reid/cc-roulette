@@ -22,47 +22,19 @@ local CONFIG = {
     ARCHIVE_FILES = {
         "LibDeflate.lua", "ar.lua", "archive.lua", "arlib.lua",
         "gzip.lua", "muxzcat.lua", "tar.lua", "unxz.lua"
-    }
+    },
+    VERSION_FILE = "/tools/roulette/version",
 }
 
--- Logging system
-local Logger = {
-    LEVELS = {
-        DEBUG = { priority = 1, color = colors.gray },
-        INFO = { priority = 2, color = colors.lightGray },
-        WARNING = { priority = 3, color = colors.yellow },
-        ERROR = { priority = 4, color = colors.red },
-        SUCCESS = { priority = 2, color = colors.lime }
-    }
-}
-
-function Logger.getTimestamp()
-    return os.date("[%Y-%m-%d %H:%M:%S]")
-end
-
-function Logger.debug(message)
-    Logger.log("DEBUG", message)
-end
-
-function Logger.info(message)
-    Logger.log("INFO", message)
-end
-
-function Logger.warning(message)
-    Logger.log("WARNING", message)
-end
-
-function Logger.error(message)
-    Logger.log("ERROR", message)
-end
-
-function Logger.success(message)
-    Logger.log("SUCCESS", message)
-end
+local Logger = require("src.log")
+local semver = require("src.semver")
+local gh = require("src.gh")
+local getReleases = gh.getReleases
 
 -- Update the main log function to align output
 function Logger.log(level, message)
-    local logConfig = Logger.LEVELS[level]
+    local trimmedLevel = level:gsub("%s+$", "")
+    local logConfig = Logger.LEVELS[trimmedLevel]
     local currentLevel = Logger.LEVELS[CONFIG.LOG_LEVEL].priority
 
     if logConfig.priority >= currentLevel then
@@ -141,27 +113,6 @@ local function downloadFile(url, path, binary)
     return true
 end
 
--- GitHub API functions
-local function getReleases()
-    local url = string.format(
-        "https://api.github.com/repos/%s/%s/releases",
-        CONFIG.GITHUB_USER,
-        CONFIG.GITHUB_REPO
-    )
-
-    Logger.info("Fetching releases from GitHub API...")
-    local response = http.get(url)
-    if not response then
-        Logger.error("Failed to fetch releases from GitHub API")
-        return nil
-    end
-
-    local data = response.readAll()
-    response.close()
-    Logger.debug("Received " .. #data .. " bytes of release data")
-    return textutils.unserializeJSON(data)
-end
-
 local function downloadCCArchive()
     if fs.exists(CONFIG.ARCHIVE_DIR) then
         Logger.info("CC-Archive already exists at " .. CONFIG.ARCHIVE_DIR)
@@ -182,7 +133,7 @@ local function downloadCCArchive()
             Logger.error("Failed to download " .. file .. ": " .. error)
             error(err)
         end
-        os.sleep(0.1) -- Prevent rate limiting
+        os.sleep(0.5) -- Prevent rate limiting
     end
 
     Logger.success("Successfully downloaded all CC-Archive components")
@@ -266,7 +217,7 @@ local function main()
         end
     end
 
-    local releases = getReleases()
+    local releases = getReleases(CONFIG.GITHUB_USER, CONFIG.GITHUB_REPO, Logger)
 
     if not releases or #releases == 0 then
         Logger.error("No releases found for repository")
@@ -278,11 +229,40 @@ local function main()
 
     displayReleaseSummary(latest)
 
+    if fs.exists(CONFIG.ROULETTE_DIR) then
+        Logger.info("Existing installation found at " .. CONFIG.ROULETTE_DIR)
+
+        local versionFile = fs.open(CONFIG.VERSION_FILE, "r")
+        if versionFile then
+            local currentVersion = versionFile.readLine()
+            versionFile.close()
+
+            local cVer = semver.parse(currentVersion)
+            local lVer = semver.parse(latest.tag_name:sub(2))
+
+            if not cVer or not lVer or semver.compare(cVer, lVer) >= 0 then
+                Logger.success("Installed version is up to date")
+                return
+            else
+                Logger.info("Updating from version " .. currentVersion .. " to " .. latest.tag_name)
+                fs.delete(CONFIG.ROULETTE_DIR)
+            end
+        else
+            Logger.warning("Failed to read version file, continuing with installation")
+            fs.delete(CONFIG.ROULETTE_DIR)
+        end
+    end
+
     downloadCCArchive()
     downloadAndExtractRelease(latest)
 
     printHeader("Installation complete")
     Logger.success("Installation of " .. CONFIG.GITHUB_REPO .. " completed successfully")
+
+    local versionFile = fs.open(CONFIG.VERSION_FILE, "w")
+    versionFile.writeLine(latest.tag_name:sub(2))
+    versionFile.close()
+    return true
 end
 
 -- Run the program

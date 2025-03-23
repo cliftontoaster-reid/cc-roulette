@@ -29,7 +29,24 @@ print(package.path)
 local ring = require("ring")
 ring.init()
 
+-- Default values
+local min = 100
+local max = 200
+
+-- Check for command line arguments
+if arg and #arg >= 2 then
+    local newMin = tonumber(arg[1])
+    local newMax = tonumber(arg[2])
+
+    if newMin and newMax and newMin < newMax then
+        min = newMin
+        max = newMax
+    else
+        print("Invalid arguments. Using default values (" .. min .. "-" .. max .. ")")
+    end
+end
+
 while true do
-    ring.launchBall(math.random(100, 200))
+    ring.launchBall(math.random(min, max))
     os.sleep(2)
 end

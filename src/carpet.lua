@@ -17,7 +17,7 @@
     along with this library. If not, see <https://www.gnu.org/licenses/>.
 ]]
 
-local mon = peripheral.find("monitor")
+local mon = peripheral.wrap("monitor_0")
 print("Looking for monitor peripheral...")
 
 if mon == nil then
@@ -97,7 +97,7 @@ local layout = {
     },
     {
         rowPos = 31,
-        items = { "1 to 18", "Even", "Red", "Black", "Odd", "19 to 36" },
+        items = { "1 to 18", "19 to 36", "Even", "Red", "Black", "Odd" },
         spacing = SPECIAL_SPACING,
         itemWidth = SPECIAL_WIDTH
     }
@@ -219,9 +219,34 @@ local function findClickedNumber(x, y)
     return nil
 end
 
+---@param amount number The amount to bet
+---@param color number The color of the bet
+---@param player string The player who placed the bet
+---@param number number The number to bet on
+---@return nil
+local function addBet(amount, color, player, number)
+    -- Check if the player has already placed a bet on this number
+    ---@type Bet
+    local existingBet = nil
+    for _, v in pairs(bets) do
+        if v.player == player and v.number == number then
+            existingBet = v
+            break
+        end
+    end
+
+    if existingBet then
+        existingBet.amount = existingBet.amount + amount
+    else
+        table.insert(bets, { amount = amount, color = color, player = player, number = number })
+    end
+    update()
+end
+
 grid.update = update
 grid.bets = bets
 grid.findClickedNumber = findClickedNumber
+grid.addBet = addBet
 
 update()
 

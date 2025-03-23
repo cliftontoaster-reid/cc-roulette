@@ -41,27 +41,107 @@ local semver = {}
 --- @return SemverVersion|nil The parsed version table, or nil if the format is invalid.
 --- @return string|nil Error message if parsing fails.
 function semver.parse(version_str)
-    -- Pattern breakdown:
-    --   (%d+)          -> one or more digits for major version
-    --   %.(%d+)        -> a dot followed by one or more digits for minor version
-    --   %.(%d+)        -> a dot followed by one or more digits for patch version
-    --   (%-[%w%.%-]+)?  -> optional pre-release prefixed with a hyphen
-    --   (%+[%w%.%-]+)?  -> optional build metadata prefixed with a plus sign
-    local pattern = "^(%d+)%.(%d+)%.(%d+)(%-[%w%.%-]+)?(%+[%w%.%-]+)?$"
-    local major, minor, patch, prerelease, build = version_str:match(pattern)
-    if not major then
-        return nil, "Invalid semantic version format"
+    if type(version_str) ~= "string" then
+        return nil, "Version must be a string"
     end
 
-    major = tonumber(major)
-    minor = tonumber(minor)
-    patch = tonumber(patch)
+    -- Split by "+" to extract build metadata
+    local version_part, build
+    local plus_pos = version_str:find("%+")
+    if plus_pos then
+        version_part = version_str:sub(1, plus_pos - 1)
+        build = version_str:sub(plus_pos + 1)
 
+        if #build == 0 then
+            return nil, "Build metadata cannot be empty"
+        end
+    else
+        version_part = version_str
+    end
+
+    -- Split by "-" to extract prerelease
+    local main_version, prerelease
+    local hyphen_pos = version_part:find("%-")
+    if hyphen_pos then
+        main_version = version_part:sub(1, hyphen_pos - 1)
+        prerelease = version_part:sub(hyphen_pos + 1)
+
+        if #prerelease == 0 then
+            return nil, "Prerelease identifier cannot be empty"
+        end
+    else
+        main_version = version_part
+    end
+
+    -- Parse major.minor.patch
+    local parts = {}
+    for part in main_version:gmatch("[^%.]+") do
+        table.insert(parts, part)
+    end
+
+    if #parts ~= 3 then
+        return nil, "Version must have exactly three numeric parts: major.minor.patch"
+    end
+
+    -- Validate and convert numeric parts
+    local major, minor, patch
+    for i, part in ipairs(parts) do
+        -- Check for non-digits
+        if part:match("[^0-9]") then
+            return nil, "Version parts must contain only digits"
+        end
+
+        -- Check for leading zeros (except when value is 0)
+        if #part > 1 and part:sub(1, 1) == "0" then
+            return nil, "Version parts cannot have leading zeros"
+        end
+
+        local num = tonumber(part)
+        if not num then
+            return nil, "Failed to convert version part to number"
+        end
+
+        if i == 1 then
+            major = num
+        elseif i == 2 then
+            minor = num
+        else
+            patch = num
+        end
+    end
+
+    -- Validate prerelease format if present
     if prerelease then
-        prerelease = prerelease:sub(2) -- remove the leading hyphen
+        for identifier in prerelease:gmatch("[^%.]+") do
+            if #identifier == 0 then
+                return nil, "Prerelease identifiers cannot be empty"
+            end
+
+            -- Must contain only alphanumerics and hyphens
+            if identifier:match("[^0-9A-Za-z%-]") then
+                return nil, "Prerelease identifiers must contain only alphanumerics and hyphens"
+            end
+
+            -- Numeric identifiers cannot have leading zeros
+            local num = tonumber(identifier)
+            if num and #identifier > 1 and identifier:sub(1, 1) == "0" then
+                return nil, "Numeric prerelease identifiers cannot have leading zeros"
+            end
+        end
     end
+
+    -- Validate build metadata format if present
     if build then
-        build = build:sub(2) -- remove the leading plus sign
+        for identifier in build:gmatch("[^%.]+") do
+            if #identifier == 0 then
+                return nil, "Build metadata identifiers cannot be empty"
+            end
+
+            -- Must contain only alphanumerics and hyphens
+            if identifier:match("[^0-9A-Za-z%-]") then
+                return nil, "Build metadata identifiers must contain only alphanumerics and hyphens"
+            end
+        end
     end
 
     return {
@@ -92,7 +172,7 @@ function semver.compare(v1, v2)
         return v1.patch > v2.patch and 1 or -1
     end
 
-    -- When numeric parts are equal, handle prerelease.
+    -- When numeric parts arINFOe equal, handle prerelease.
     if v1.prerelease == v2.prerelease then
         return 0
     elseif v1.prerelease == nil then

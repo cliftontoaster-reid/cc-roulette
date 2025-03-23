@@ -18,7 +18,7 @@ local CONFIG = {
     ARCHIVE_DIR = "/tools/cc-archive",
     TEMP_DIR = "/tmp",
     LOG_FILE = "/tools/roulette-install.log",
-    LOG_LEVEL = "INFO", -- DEBUG, INFO, WARNING, ERROR
+    LOG_LEVEL = "DEBUG", -- DEBUG, INFO, WARNING, ERROR
     ARCHIVE_FILES = {
         "LibDeflate.lua", "ar.lua", "archive.lua", "arlib.lua",
         "gzip.lua", "muxzcat.lua", "tar.lua", "unxz.lua"
@@ -240,7 +240,9 @@ local function main()
             local cVer = semver.parse(currentVersion)
             local lVer = semver.parse(latest.tag_name:sub(2))
 
-            if not cVer or not lVer or semver.compare(cVer, lVer) >= 0 then
+            Logger.debug("Installed version: " .. currentVersion)
+            Logger.debug("Latest version: " .. latest.tag_name)
+            if not cVer or not lVer or semver.ge(cVer, lVer) then
                 Logger.success("Installed version is up to date")
                 return
             else

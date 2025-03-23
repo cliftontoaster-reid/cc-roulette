@@ -17,9 +17,15 @@
     along with this library. If not, see <https://www.gnu.org/licenses/>.
 ]]
 
+-- ==============================
+-- Configuration and Initialization
+-- ==============================
 local mon = peripheral.wrap("monitor_1")
+local ring = {}
 local ballPos = 1
+local lastBallPos = { x = nil, y = nil }
 
+-- Monitor validation
 if mon == nil then
     error("Monitor not found", 0)
     return
@@ -37,41 +43,75 @@ if w < 88 or h < 44 then
     return
 end
 
-local ring = {}
-local ringSize = 36
+-- ==============================
+-- Constants
+-- ==============================
+local RING_SIZE = 36
+local ELEMENT_WIDTH = 9
+local ELEMENT_HEIGHT = 6
+local SPACING_X = ELEMENT_WIDTH
+local SPACING_Y = ELEMENT_HEIGHT
+local START_X = 4
+local START_Y = 4
 
--- Define block size variables globally
-local elementWidth = 9
-local elementHeight = 6
-local spacingX = elementWidth
-local spacingY = elementHeight
+-- Colors
+local COLOR = {
+    BG = colors.green,
+    RED = colors.red,
+    BLACK = colors.black,
+    WHITE = colors.white,
+    BLUE = colors.blue,
+    GRAY = colors.gray
+}
 
+-- ==============================
+-- Helper Functions
+-- ==============================
+
+---Checks if a coordinate is within monitor bounds
+---@param x number X coordinate
+---@param y number Y coordinate
+---@return boolean inBounds True if coordinates are within monitor bounds
+local function isInBounds(x, y)
+    local monW, monH = mon.getSize()
+    return x >= 1 and x <= monW and y >= 1 and y <= monH
+end
+
+---Draws a single element on the monitor
+---@param x number Left position
+---@param y number Top position
+---@param color number Color from colors table
+---@param number number|nil Optional number to display in the element
 local function drawElement(x, y, color, number)
-    -- Draw a 6x3 rectangle
+    -- Draw a rectangle
     mon.setBackgroundColor(color)
-    mon.setTextColor(colors.white)
+    mon.setTextColor(COLOR.WHITE)
 
-    for i = 0, elementWidth - 1 do
-        for j = 0, elementHeight - 1 do
+    for i = 0, ELEMENT_WIDTH - 1 do
+        for j = 0, ELEMENT_HEIGHT - 1 do
             mon.setCursorPos(x + i, y + j)
             mon.write(" ")
         end
     end
 
-    -- Center the number in the block
+    -- Center the number in the element if provided
     if number == nil then
         return
     end
-    if number < 10 then
-        mon.setCursorPos(x + math.floor(elementWidth / 2), y + math.floor(elementHeight / 2))
-    else
-        mon.setCursorPos(x + math.floor(elementWidth / 2) - 1, y + math.floor(elementHeight / 2))
+
+    local numberX = x + math.floor(ELEMENT_WIDTH / 2)
+    if number >= 10 then
+        numberX = numberX - 1
     end
+
+    mon.setCursorPos(numberX, y + math.floor(ELEMENT_HEIGHT / 2))
     mon.write(tostring(number))
 end
 
-local function drawBallElement(x, y, color)
-    -- Draw a 9x6 circle
+---Draws a ball element on the monitor
+---@param x number Left position
+---@param y number Top position
+local function drawBallElement(x, y)
     local ball = {
         "   000   ",
         "  00000  ",
@@ -81,102 +121,67 @@ local function drawBallElement(x, y, color)
         "   000   ",
     }
 
-    -- Print the  0 as a white background space, and spaces, as green background spaces
     for i = 1, #ball do
         for j = 1, #ball[i] do
             mon.setCursorPos(x + j - 1, y + i - 1)
-            mon.setBackgroundColor(ball[i]:sub(j, j) == "0" and colors.blue or colors.green)
+            mon.setBackgroundColor(ball[i]:sub(j, j) == "0" and COLOR.BLUE or COLOR.BG)
             mon.write(" ")
         end
     end
 end
 
--- Takes the number and returns where the square in the ring should be
--- so that in the inner ring, 1 is at the top left, 2 is just to the right of 1, etc
--- until you went all the way around the inner ring, then you start on the outer ring
--- the outer ring being the ones with the numbers
+---Converts a roulette number to x,y coordinates
+---@param number number The roulette number (1-36)
+---@return number|nil x The x coordinate
+---@return number|nil y The y coordinate
 local function numberToPos(number)
-    local posx = 4 + elementWidth
-    local posy = 4 + elementHeight
+    local posx = START_X + ELEMENT_WIDTH
+    local posy = START_Y + ELEMENT_HEIGHT
 
     if number <= 10 then
-        local newx = posx + (number - 1) * spacingX
+        local newx = posx + (number - 1) * SPACING_X
         return newx, posy
     elseif number <= 19 then
-        local newy = posy + (number - 10) * spacingY
-        return posx + spacingX * 9, newy
+        local newy = posy + (number - 10) * SPACING_Y
+        return posx + SPACING_X * 9, newy
     elseif number <= 28 then
-        local newx = posx + spacingX * 9 - (number - 19) * spacingX
-        return newx, posy + spacingY * 9
+        local newx = posx + SPACING_X * 9 - (number - 19) * SPACING_X
+        return newx, posy + SPACING_Y * 9
     elseif number <= 36 then
-        local newy = posy + spacingY * 9 - (number - 28) * spacingY
+        local newy = posy + SPACING_Y * 9 - (number - 28) * SPACING_Y
         return posx, newy
     else
         return nil, nil
     end
 end
 
--- Keep track of the last ball position
-local lastBallPos = { x = nil, y = nil }
-
-local function drawBall(number)
-    local x, y = numberToPos(number)
-    if x == nil then
-        return
-    end
-
-    -- Clear the last ball position only
-    if lastBallPos.x ~= nil then
-        drawElement(lastBallPos.x, lastBallPos.y, colors.green, nil)
-    end
-
-    -- Draw the new ball
-    drawBallElement(x, y)
-
-    -- Remember this position as the last ball position
-    lastBallPos.x = x
-    lastBallPos.y = y
-end
-
+---Draws a line on the monitor
+---@param startX number Start X coordinate
+---@param startY number Start Y coordinate
+---@param endX number End X coordinate
+---@param endY number End Y coordinate
+---@param color number|nil Optional color (defaults to white)
+---@param thickness number|nil Optional line thickness (defaults to 1)
 local function drawLine(startX, startY, endX, endY, color, thickness)
-    -- Set color
-    mon.setBackgroundColor(color or colors.white)
-
-    -- Default thickness to 1 if not provided
+    mon.setBackgroundColor(color or COLOR.WHITE)
     thickness = thickness or 1
 
-    -- Get monitor dimensions
-    local monW, monH = mon.getSize()
-
-    -- Function to check if a point is within monitor bounds
-    local function isInBounds(x, y)
-        return x >= 1 and x <= monW and y >= 1 and y <= monH
-    end
-
-    -- Calculate line parameters
     local dx = math.abs(endX - startX)
     local dy = math.abs(endY - startY)
     local sx = startX < endX and 1 or -1
     local sy = startY < endY and 1 or -1
-
-    -- Decision variable for Bresenham's algorithm
     local err = dx - dy
-
-    -- Current position
     local x, y = startX, startY
-
-    -- For thicker lines
     local halfThick = math.floor(thickness / 2)
 
     while true do
-        -- For thickness of 1, just draw the single pixel
         if thickness == 1 then
             if isInBounds(x, y) then
                 mon.setCursorPos(x, y)
                 mon.write(" ")
             end
         else
-            -- For thicker lines, draw perpendicular to the major axis
+            -- Draw perpendicular to the major axis for thickness
             if dx >= dy then -- More horizontal
                 for i = -halfThick, halfThick do
                     local drawY = y + i
@@ -214,146 +219,81 @@ local function drawLine(startX, startY, endX, endY, color, thickness)
     end
 end
 
-local function drawRing()
-    mon.setBackgroundColor(colors.green)
-    mon.clear()
+---Draws a sequence of elements in a row or column
+---@param startNum number Starting number
+---@param count number Number of elements to draw
+---@param startX number Starting X position
+---@param startY number Starting Y position
+---@param incrementX number X increment between elements
+---@param incrementY number Y increment between elements
+local function drawSequence(startNum, count, startX, startY, incrementX, incrementY)
+    local x, y = startX, startY
+    for i = 0, count - 1 do
+        local num = startNum + i
+        drawElement(x, y, num % 2 == 0 and COLOR.RED or COLOR.BLACK, num)
+        x = x + incrementX
+        y = y + incrementY
+    end
+end
 
-    -- Define positioning
-    local startX = 4
-    local startY = 4
-    local endX = spacingX * 11 + startX
-    local endY = spacingY * 11 + startY
-    local midX = endX - elementWidth
-    local midY = endY - elementHeight
-
-    -- Helper function to draw a sequence of elements
-    local function drawSequence(startNum, count, startX, startY, incrementX, incrementY)
-        local x, y = startX, startY
-        for i = 0, count - 1 do
-            local num = startNum + i
-            drawElement(x, y, num % 2 == 0 and colors.red or colors.black, num)
-            x = x + incrementX
-            y = y + incrementY
-        end
+---Draws the ball at a specific roulette number position
+---@param number number Roulette number position
+local function drawBall(number)
+    local x, y = numberToPos(number)
+    if x == nil then
+        return
     end
 
-    -- Draw the first corner (top-left)
-    drawElement(startX, startY, colors.black, nil)
-    drawElement(startX + elementWidth, startY, colors.black, 1)
-    drawElement(startX, startY + elementHeight, colors.black, 1)
+    -- Clear the last ball position
+    if lastBallPos.x ~= nil then
+        drawElement(lastBallPos.x, lastBallPos.y, COLOR.BG, nil)
+    end
 
-    -- Draw top row (2-9)
-    drawSequence(2, 8, startX + 2 * elementWidth, startY, spacingX, 0)
+    -- Draw the new ball
+    drawBallElement(x, y)
 
-    -- Draw top-right corner
-    drawElement(midX, startY, colors.red, 10)
-    drawElement(endX, startY, colors.red, nil)
-    drawElement(endX, startY + elementHeight, colors.red, 10)
+    -- Remember this position
+    lastBallPos.x = x
+    lastBallPos.y = y
+end
 
-    -- Draw right column (11-18)
-    drawSequence(11, 8, endX, startY + 2 * elementHeight, 0, spacingY)
-
-    -- Draw bottom-right corne
-    drawElement(endX, midY, colors.black, 19)
-    drawElement(endX, endY, colors.black, nil)
-    drawElement(midX, endY, colors.black, 19)
-
-    -- Draw bottom row (20-27)
-    drawSequence(20, 8, midX - elementWidth, endY, -spacingX, 0)
-
-    -- Draw bottom-left corner
-    drawElement(startX + elementWidth, endY, colors.red, 28)
-    drawElement(startX, endY, colors.red, nil)
-    drawElement(startX, midY, colors.red, 28)
-
-    -- Draw left column (29-36)
-    drawSequence(29, 8, startX, midY - elementHeight, 0, -spacingY)
-    --- PRETTY MIDDLE
+---Draws the decorative middle area of the roulette board
+---@param startX number Starting X position
+---@param startY number Starting Y position
+local function drawMiddleDecoration(startX, startY)
     local middleSizeX = 12
     local middleSizeY = 12
-    local ringSizeX = elementWidth * 12
-    local ringSizeY = elementHeight * 12
+    local ringSizeX = ELEMENT_WIDTH * 12
+    local ringSizeY = ELEMENT_HEIGHT * 12
 
     local middleX = startX + (ringSizeX - middleSizeX) / 2
     local middleY = startY + (ringSizeY - middleSizeY) / 2
 
-    -- Draw a horizontal line across the middle, 7 elements long
-    drawLine(
-        startX + (elementWidth * 2),
-        middleY + middleSizeY / 2,
-        startX + (elementWidth * 2) + (middleSizeX * 6) - 1,
-        middleY + middleSizeY / 2,
-        colors.white,
-        1
-    )
+    -- Points for drawing
+    local left = startX + (ELEMENT_WIDTH * 2)
+    local top = startY + (ELEMENT_HEIGHT * 2)
+    local right = left + (middleSizeX * 6) - 1
+    local bottom = top + (middleSizeY * 4) - 1
+    local midX = middleX + middleSizeX / 2
 
-    -- Draw a vertical line through the middle
-    drawLine(
-        middleX + middleSizeX / 2,
-        startY + (elementHeight * 2),
-        middleX + middleSizeX / 2,
-        startY + (elementHeight * 2) + (middleSizeY * 4) - 1,
-        colors.white,
-        1
-    )
+    -- Draw horizontal line across middle
+    drawLine(left, middleY + middleSizeY / 2, right, middleY + middleSizeY / 2, COLOR.WHITE, 1)
 
-    -- Draw a diagonal line from the min of both horizontal and vertical lines
-    -- to their combined end, as well as the opposite
-    drawLine(
-        startX + (elementWidth * 2),
-        startY + (elementHeight * 2),
-        startX + (elementWidth * 2) + (middleSizeX * 6) - 1,
-        startY + (elementHeight * 2) + (middleSizeY * 4) - 1,
-        colors.white,
-        2
-    )
+    -- Draw vertical line through middle
+    drawLine(midX, top, midX, bottom, COLOR.WHITE, 1)
 
-    drawLine(
-        startX + (elementWidth * 2) + (middleSizeX * 6) - 1,
-        startY + (elementHeight * 2),
-        startX + (elementWidth * 2),
-        startY + (elementHeight * 2) + (middleSizeY * 4) - 1,
-        colors.white,
-        2
-    )
+    -- Draw diagonal lines
+    drawLine(left, top, right, bottom, COLOR.WHITE, 2)
+    drawLine(right, top, left, bottom, COLOR.WHITE, 2)
 
-    -- Now make a square that uses every end of the diagonal lines as a corner
-    drawLine(
-        startX + (elementWidth * 2),
-        startY + (elementHeight * 2),
-        startX + (elementWidth * 2) + (middleSizeX * 6) - 1,
-        startY + (elementHeight * 2),
-        colors.white,
-        1
-    )
-    drawLine(
-        startX + (elementWidth * 2) + (middleSizeX * 6) - 1,
-        startY + (elementHeight * 2),
-        startX + (elementWidth * 2) + (middleSizeX * 6) - 1,
-        startY + (elementHeight * 2) + (middleSizeY * 4) - 1,
-        colors.white,
-        1
-    )
-    drawLine(
-        startX + (elementWidth * 2) + (middleSizeX * 6) - 1,
-        startY + (elementHeight * 2) + (middleSizeY * 4) - 1,
-        startX + (elementWidth * 2),
-        startY + (elementHeight * 2) + (middleSizeY * 4) - 1,
-        colors.white,
-        1
-    )
-    drawLine(
-        startX + (elementWidth * 2),
-        startY + (elementHeight * 2) + (middleSizeY * 4) - 1,
-        startX + (elementWidth * 2),
-        startY + (elementHeight * 2),
-        colors.white,
-        1
-    )
+    -- Draw outer square
+    drawLine(left, top, right, top, COLOR.WHITE, 1)
+    drawLine(right, top, right, bottom, COLOR.WHITE, 1)
+    drawLine(right, bottom, left, bottom, COLOR.WHITE, 1)
+    drawLine(left, bottom, left, top, COLOR.WHITE, 1)
 
-
-    -- Draw a circle at the middle of the ring, make it grey
-    mon.setBackgroundColor(colors.gray)
+    -- Draw circle in the middle
+    mon.setBackgroundColor(COLOR.GRAY)
     for i = 0, middleSizeX - 1 do
         for j = 0, middleSizeY - 1 do
             if (i - middleSizeX / 2) ^ 2 + (j - middleSizeY / 2) ^ 2 < (middleSizeX / 2) ^ 2 then
@@ -364,10 +304,63 @@ local function drawRing()
     end
 end
 
+-- ==============================
+-- Main Drawing Functions
+-- ==============================
+
+---Draws the complete roulette ring
+local function drawRing()
+    mon.setBackgroundColor(COLOR.BG)
+    mon.clear()
+
+    -- Calculate positions
+    local endX = SPACING_X * 11 + START_X
+    local endY = SPACING_Y * 11 + START_Y
+    local midX = endX - ELEMENT_WIDTH
+    local midY = endY - ELEMENT_HEIGHT
+
+    -- Draw corners
+    drawElement(START_X, START_Y, COLOR.BLACK, nil)
+    drawElement(START_X + ELEMENT_WIDTH, START_Y, COLOR.BLACK, 1)
+    drawElement(START_X, START_Y + ELEMENT_HEIGHT, COLOR.BLACK, 1)
+
+    -- Draw top row (2-9)
+    drawSequence(2, 8, START_X + 2 * ELEMENT_WIDTH, START_Y, SPACING_X, 0)
+
+    -- Draw top-right corner
+    drawElement(midX, START_Y, COLOR.RED, 10)
+    drawElement(endX, START_Y, COLOR.RED, nil)
+    drawElement(endX, START_Y + ELEMENT_HEIGHT, COLOR.RED, 10)
+
+    -- Draw right column (11-18)
+    drawSequence(11, 8, endX, START_Y + 2 * ELEMENT_HEIGHT, 0, SPACING_Y)
+
+    -- Draw bottom-right corner
+    drawElement(endX, midY, COLOR.BLACK, 19)
+    drawElement(endX, endY, COLOR.BLACK, nil)
+    drawElement(midX, endY, COLOR.BLACK, 19)
+
+    -- Draw bottom row (20-27)
+    drawSequence(20, 8, midX - ELEMENT_WIDTH, endY, -SPACING_X, 0)
+
+    -- Draw bottom-left corner
+    drawElement(START_X + ELEMENT_WIDTH, endY, COLOR.RED, 28)
+    drawElement(START_X, endY, COLOR.RED, nil)
+    drawElement(START_X, midY, COLOR.RED, 28)
+
+    -- Draw left column (29-36)
+    drawSequence(29, 8, START_X, midY - ELEMENT_HEIGHT, 0, -SPACING_Y)
+
+    -- Draw the decorative middle
+    drawMiddleDecoration(START_X, START_Y)
+end
+
+---Animates the ball movement with easing
+---@param force number How many positions to move
 local function launchBall(force)
     -- Pre-calculate final position
-    local newBallPos = (ballPos + force) % ringSize
-    if newBallPos == 0 then newBallPos = ringSize end
+    local newBallPos = (ballPos + force) % RING_SIZE
+    if newBallPos == 0 then newBallPos = RING_SIZE end
 
     -- Draw the ring once before animation
     drawRing()
@@ -377,7 +370,7 @@ local function launchBall(force)
     local maxSleep = 0.45
     local sleepRange = maxSleep - minSleep
 
-    -- Define easeInOutQuad function
+    -- Easing function for smooth animation
     local function ease(step)
         if step < 0.8 then
             return 0.5 * step / 0.8
@@ -386,12 +379,11 @@ local function launchBall(force)
         end
     end
 
-    -- Animate through every single position
+    -- Animate through every position
     for step = 1, force do
-        print("Step: " .. step .. " of " .. force)
         -- Calculate current position
-        local currentPos = (ballPos + step) % ringSize
-        if currentPos == 0 then currentPos = ringSize end
+        local currentPos = (ballPos + step) % RING_SIZE
+        if currentPos == 0 then currentPos = RING_SIZE end
 
         -- Draw the ball at each position
         drawBall(currentPos)
@@ -399,18 +391,63 @@ local function launchBall(force)
         -- Add a tiny bit of randomness to the sleep time
         local randomFactor = math.random() * 0.02 - 0.01
         local sleepTime = minSleep + ease(step / force) * sleepRange + randomFactor
-        print("Sleeping for " .. sleepTime)
         sleep(sleepTime)
     end
 
     -- Update ball position to final location
     ballPos = newBallPos
+
+    -- Make the winning number blink
+    local x, y = numberToPos(ballPos)
+    if x then
+        local originalColor = ballPos % 2 == 0 and COLOR.RED or COLOR.BLACK
+        local blinkCount = 10
+
+        for i = 1, blinkCount do
+            -- Invert colors
+            drawElement(x, y, COLOR.WHITE, ballPos)
+            mon.setTextColor(originalColor)
+            local numberX = x + math.floor(ELEMENT_WIDTH / 2)
+            if ballPos >= 10 then
+                numberX = numberX - 1
+            end
+            mon.setCursorPos(numberX, y + math.floor(ELEMENT_HEIGHT / 2))
+            mon.write(tostring(ballPos))
+            sleep(0.3)
+
+            -- Return to original
+            drawElement(x, y, originalColor, ballPos)
+            sleep(0.3)
+        end
+
+        -- Draw ball at final position
+        drawBall(ballPos)
+    end
 end
 
-drawRing()
-drawBall(ballPos)
+-- ==============================
+-- Main Program Loop
+-- ==============================
 
-while true do
-    launchBall(math.random(150, 200))
-    sleep(2)
+local ring = {}
+
+-- Public API
+ring.drawRing = drawRing
+ring.launchBall = launchBall
+ring.drawBall = drawBall
+ring.numberToPos = numberToPos
+
+-- Getters
+function ring.getBallPosition()
+    return ballPos
 end
+
+-- Initialize the ring
+function ring.init()
+    drawRing()
+    drawBall(ballPos)
+    return ring
+end
+
+-- Return the module
+return ring

@@ -177,10 +177,10 @@ local function downloadCCArchive()
 
     for i, file in ipairs(CONFIG.ARCHIVE_FILES) do
         Logger.info(string.format("[%d/%d] Downloading %s", i, totalFiles, file))
-        local success, error = downloadFile(baseUrl .. file, CONFIG.ARCHIVE_DIR .. "/" .. file)
+        local success, err = downloadFile(baseUrl .. file, CONFIG.ARCHIVE_DIR .. "/" .. file)
         if not success then
             Logger.error("Failed to download " .. file .. ": " .. error)
-            error(error)
+            error(err)
         end
         os.sleep(0.1) -- Prevent rate limiting
     end

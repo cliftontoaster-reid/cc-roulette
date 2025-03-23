@@ -240,7 +240,7 @@ end
 ---@param number number Roulette number position
 local function drawBall(number)
     local x, y = numberToPos(number)
-    if x == nil then
+    if x == nil or y == nil then
         return
     end
 
@@ -399,7 +399,7 @@ local function launchBall(force)
 
     -- Make the winning number blink
     local x, y = numberToPos(ballPos)
-    if x then
+    if x and y then
         local originalColor = ballPos % 2 == 0 and COLOR.RED or COLOR.BLACK
         local blinkCount = 10
 

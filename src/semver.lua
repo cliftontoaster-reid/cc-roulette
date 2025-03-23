@@ -23,7 +23,7 @@
 
 local semver = {}
 
---- @class SemverVersion
+--- @class SemVer
 --- Represents a semantic version.
 --- @field major number The major version.
 --- @field minor number The minor version.
@@ -31,14 +31,14 @@ local semver = {}
 --- @field prerelease string|nil Optional pre-release identifier.
 --- @field build string|nil Optional build metadata.
 
---- Parses a semantic version string into a SemverVersion object.
+--- Parses a semantic version string into a SemVer object.
 --- The accepted format is "MAJOR.MINOR.PATCH", with optional pre-release and build metadata.
 --- Examples:
 ---   "1.2.3"           => major=1, minor=2, patch=3
 ---   "1.2.3-alpha"     => prerelease="alpha"
 ---   "1.2.3-alpha+001" => prerelease="alpha", build="001"
 --- @param version_str string The semantic version string to parse.
---- @return SemverVersion|nil The parsed version table, or nil if the format is invalid.
+--- @return SemVer|nil The parsed version table, or nil if the format is invalid.
 --- @return string|nil Error message if parsing fails.
 function semver.parse(version_str)
     if type(version_str) ~= "string" then
@@ -153,13 +153,13 @@ function semver.parse(version_str)
     }
 end
 
---- Compares two SemverVersion objects.
+--- Compares two SemVer objects.
 --- Comparison follows semver precedence rules:
 --- 1. Compare major, minor, then patch numbers.
 --- 2. A version without a prerelease field has higher precedence than one with a prerelease.
 --- 3. If both have prerelease values, compare them by splitting into dot-separated identifiers.
---- @param v1 SemverVersion The first version.
---- @param v2 SemverVersion The second version.
+--- @param v1 SemVer The first version.
+--- @param v2 SemVer The second version.
 --- @return number Returns 1 if v1 > v2, -1 if v1 < v2, or 0 if both are equal.
 function semver.compare(v1, v2)
     if v1.major ~= v2.major then
@@ -222,8 +222,8 @@ function semver.compare(v1, v2)
     end
 end
 
---- Converts a SemverVersion object back to its string representation.
---- @param version SemverVersion The version object.
+--- Converts a SemVer object back to its string representation.
+--- @param version SemVer The version object.
 --- @return string The semantic version string.
 function semver.toString(version)
     local str = string.format("%d.%d.%d", version.major, version.minor, version.patch)
@@ -236,44 +236,44 @@ function semver.toString(version)
     return str
 end
 
--- Utility functions for comparing parsed SemverVersion objects
+-- Utility functions for comparing parsed SemVer objects
 
---- Checks if two SemverVersion objects are equal.
---- @param v1 SemverVersion The first version.
---- @param v2 SemverVersion The second version.
+--- Checks if two SemVer objects are equal.
+--- @param v1 SemVer The first version.
+--- @param v2 SemVer The second version.
 --- @return boolean True if equal, false otherwise.
 function semver.eq(v1, v2)
     return semver.compare(v1, v2) == 0
 end
 
---- Checks if the first SemverVersion object is greater than the second.
---- @param v1 SemverVersion The first version.
---- @param v2 SemverVersion The second version.
+--- Checks if the first SemVer object is greater than the second.
+--- @param v1 SemVer The first version.
+--- @param v2 SemVer The second version.
 --- @return boolean True if v1 > v2, false otherwise.
 function semver.gt(v1, v2)
     return semver.compare(v1, v2) == 1
 end
 
---- Checks if the first SemverVersion object is less than the second.
---- @param v1 SemverVersion The first version.
---- @param v2 SemverVersion The second version.
+--- Checks if the first SemVer object is less than the second.
+--- @param v1 SemVer The first version.
+--- @param v2 SemVer The second version.
 --- @return boolean True if v1 < v2, false otherwise.
 function semver.lt(v1, v2)
     return semver.compare(v1, v2) == -1
 end
 
---- Checks if the first SemverVersion object is greater than or equal to the second.
---- @param v1 SemverVersion The first version.
---- @param v2 SemverVersion The second version.
+--- Checks if the first SemVer object is greater than or equal to the second.
+--- @param v1 SemVer The first version.
+--- @param v2 SemVer The second version.
 --- @return boolean True if v1 >= v2, false otherwise.
 function semver.ge(v1, v2)
     local cmp = semver.compare(v1, v2)
     return cmp == 1 or cmp == 0
 end
 
---- Checks if the first SemverVersion object is less than or equal to the second.
---- @param v1 SemverVersion The first version.
---- @param v2 SemverVersion The second version.
+--- Checks if the first SemVer object is less than or equal to the second.
+--- @param v1 SemVer The first version.
+--- @param v2 SemVer The second version.
 --- @return boolean True if v1 <= v2, false otherwise.
 function semver.le(v1, v2)
     local cmp = semver.compare(v1, v2)

@@ -43,7 +43,8 @@ local grid = {}
 ---@class Bet
 ---@field amount number
 ---@field color number
----@field player string
+---@field player string | nil
+---@field uuid string | nil
 ---@field number number
 
 ---@type Bet[]

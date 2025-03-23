@@ -1,0 +1,129 @@
+--[[
+    ToasterGen Spin
+
+    Copyright (C) 2025 Clifton Toaster Reid <cliftontreid@duck.com>
+
+    This library is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This library is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+    GNU Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public License
+    along with this library. If not, see <https://www.gnu.org/licenses/>.
+]]
+
+local msg = peripheral.find("chatBox")
+local players = peripheral.find("playerDetector")
+
+---@class tmpBet
+---@field amount number
+---@field player string | nil
+---@field uuid string | nil
+
+---@type tmpBet
+local tmpBet = {
+    amount = 0,
+    player = nil,
+}
+if msg == nil then
+    error("ChatBox not found", 0)
+    return
+end
+if players == nil then
+    error("PlayerDetector not found", 0)
+    return
+end
+
+local PLAYERZONE = 5
+local COMMANDS = {
+    "register",
+    "redeem"
+}
+
+local function has_value(tab, val)
+    for index, value in ipairs(tab) do
+        if value == val then
+            return true
+        end
+    end
+
+    return false
+end
+
+
+---@class ChatEvent
+---@field type string The type of event
+---@field username string The username of the player who sent the message
+---@field uuid string The UUID of the player who sent the message
+---@field message string The message sent by the player
+---@field isHidden boolean Whether the message is hidden
+
+---Handles chat events
+---@param event ChatEvent The chat event to handle
+local function handleChatEvent(event)
+    if event.type ~= "chat" then
+        return
+    end
+    if not event.isHidden or has_value(COMMANDS, event.message) then
+        print("Received invalid chat event")
+        return
+    end
+    -- Check if the player is
+    local around = players.getPlayersInCubic(PLAYERZONE, PLAYERZONE, PLAYERZONE)
+    local isAround = false
+    for _, player in ipairs(around) do
+        if player.uuid == event.uuid then
+            isAround = true
+            break
+        end
+    end
+    if not isAround then
+        error("Player '" .. event.username .. "' not in range", 0)
+        return
+    end
+
+    if event.message == "register" then
+        if tmpBet.player ~= nil then
+            if tmpBet.player == event.username then
+                msg.sendMessageToPlayer("You are already registered, you may proceed to place a bet", event.username)
+            elseif tmpBet.player ~= event.username then
+                msg.sendMessageToPlayer("A player is currently registered, please wait for them to place a bet",
+                    event.username)
+            end
+            return
+        end
+        tmpBet.player = event.username
+        tmpBet.uuid = event.uuid
+        msg.sendMessageToPlayer("You have been registered, you may now place a bet", event.username)
+    elseif event.message == "redeem" then
+        msg.sendMessageToPlayer("Redeemed player '" .. event.username .. "'", event.username)
+    end
+end
+
+---@param event string
+local function handleCoin(event)
+    if event ~= "coin" then
+        return
+    end
+    tmpBet.amount = tmpBet.amount + 1
+    if tmpBet.player == nil then
+        msg.sendMessage(
+            "No player registered, please use '$register' before placing a bet, there are currently " .. tmpBet.amount ..
+            " coins without an owner")
+        return -1
+    end
+    msg.sendMessageToPlayer("Coin received, a total of " .. tmpBet.amount .. " coins are now in your account",
+        tmpBet.player)
+    return 0
+end
+
+local msgFuncs = {}
+
+msgFuncs.handleChatEvent = handleChatEvent
+msgFuncs.handleCoin = handleCoin
+return msgFuncs

@@ -17,6 +17,8 @@
     along with this library. If not, see <https://www.gnu.org/licenses/>.
 ]]
 
+---@class Logger
+
 local Logger = {
     LEVELS = {
         DEBUG = { priority = 1, color = colors.gray },

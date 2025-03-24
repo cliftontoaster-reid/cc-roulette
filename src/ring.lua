@@ -357,6 +357,7 @@ end
 
 ---Animates the ball movement with easing
 ---@param force number How many positions to move
+---@return number The final ball position
 local function launchBall(force)
     -- Pre-calculate final position
     local newBallPos = (ballPos + force) % RING_SIZE
@@ -423,6 +424,7 @@ local function launchBall(force)
         -- Draw ball at final position
         drawBall(ballPos)
     end
+    return ballPos
 end
 
 -- ==============================

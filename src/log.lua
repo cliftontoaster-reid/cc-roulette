@@ -18,6 +18,13 @@
 ]]
 
 ---@class Logger
+---@field LEVELS table<string, {priority: number, color: number}>
+---@field getTimestamp fun(): string
+---@field debug fun(message: string): nil
+---@field info fun(message: string): nil
+---@field warning fun(message: string): nil
+---@field error fun(message: string): nil
+---@field success fun(message: string): nil
 
 local Logger = {
     LEVELS = {
@@ -33,24 +40,34 @@ function Logger.getTimestamp()
     return os.date("[%Y-%m-%d %H:%M:%S]")
 end
 
-function Logger.debug(message)
-    Logger.log("DEBUG  ", message)
+--- Log a message to the console as DEBUG
+--- @param ... any, arguments for message formatting.
+function Logger.debug(...)
+    Logger.log("DEBUG  ", string.format(...))
 end
 
-function Logger.info(message)
-    Logger.log("INFO   ", message)
+--- Log a message to the console as INFO
+--- @param ... any, arguments for message formatting.
+function Logger.info(...)
+    Logger.log("INFO   ", string.format(...))
 end
 
-function Logger.warning(message)
-    Logger.log("WARNING", message)
+--- Log a message to the console as WARNING
+--- @param ... any, arguments for message formatting.
+function Logger.warning(...)
+    Logger.log("WARNING", string.format(...))
 end
 
-function Logger.error(message)
-    Logger.log("ERROR  ", message)
+--- Log a message to the console as ERROR
+--- @param ... any, arguments for message formatting.
+function Logger.error(...)
+    Logger.log("ERROR  ", string.format(...))
 end
 
-function Logger.success(message)
-    Logger.log("SUCCESS", message)
+--- Log a message to the console as SUCCESS
+--- @param ... any, arguments for message formatting.
+function Logger.success(...)
+    Logger.log("SUCCESS", string.format(...))
 end
 
 return Logger

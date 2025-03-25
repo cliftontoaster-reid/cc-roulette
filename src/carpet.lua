@@ -88,6 +88,10 @@ local layout = {
 ---@param posx number The x position to print the bets
 ---@return nil
 local function printBet(nbr, idx, posx)
+    if mon == nil then
+        return
+    end
+
     local usedBets = {}
 
     for _, v in pairs(bets) do
@@ -124,6 +128,10 @@ end
 ---@param rowDef table The row definition containing position and items
 ---@return nil
 local function printRow(rowDef)
+    if mon == nil then
+        return
+    end
+
     mon.setCursorPos(1, rowDef.rowPos)
 
     -- Print the regular items in the row
@@ -158,6 +166,10 @@ local function printRow(rowDef)
 end
 
 local function update()
+    if mon == nil then
+        return
+    end
+
     mon.clear()
     mon.setBackgroundColour(colours.green)
     mon.setTextColour(colours.white)

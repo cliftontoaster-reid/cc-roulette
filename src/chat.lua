@@ -233,4 +233,27 @@ msgFuncs.addPlayer = addPlayer
 msgFuncs.removePlayer = removePlayer
 msgFuncs.init = init
 
+--- Sends a message to all players
+---@param message string The message to send
+---@return nil
+msgFuncs.sendMessage = function(message)
+    if msg then
+        msg.sendMessage(message)
+    else
+        error("ChatBox not initialized", 0)
+    end
+end
+
+--- Sends a message to a player
+---@param message string The message to send
+---@param player string The player to send the message to
+---@return nil
+msgFuncs.sendMessageToPlayer = function(message, player)
+    if msg then
+        msg.sendMessageToPlayer(message, player)
+    else
+        error("ChatBox not initialized", 0)
+    end
+end
+
 return msgFuncs

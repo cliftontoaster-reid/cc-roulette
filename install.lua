@@ -133,7 +133,7 @@ local function downloadCCArchive()
             Logger.error("Failed to download " .. file .. ": " .. error)
             error(err)
         end
-        os.sleep(0.5) -- Prevent rate limiting
+        os.sleep(0.2) -- Prevent rate limiting
     end
 
     Logger.success("Successfully downloaded all CC-Archive components")
@@ -206,8 +206,11 @@ local function displayReleaseSummary(release)
     printFooter()
 end
 
+
 -- Main execution
 local function main()
+    local update = false
+
     Logger.info("Starting installation of " .. CONFIG.GITHUB_REPO .. "...")
 
     Logger.debug("Configuration settings:")
@@ -230,6 +233,7 @@ local function main()
     displayReleaseSummary(latest)
 
     if fs.exists(CONFIG.ROULETTE_DIR) then
+        update = true
         Logger.info("Existing installation found at " .. CONFIG.ROULETTE_DIR)
 
         local versionFile = fs.open(CONFIG.VERSION_FILE, "r")
@@ -264,6 +268,21 @@ local function main()
     local versionFile = fs.open(CONFIG.VERSION_FILE, "w")
     versionFile.writeLine(latest.tag_name:sub(2))
     versionFile.close()
+
+    local config = require("tools.config")
+
+    if not update then
+        if config.askYesNo("Would you like to configure the program now?") then
+            local dev = config.askOption("What device would you like to configure?", { "Table", "Server" })
+            if dev == "Table" then
+                config.configTable()
+            elseif dev == "Server" then
+                error("Server configuration not yet implemented, we apologize for the inconvenience")
+            end
+        end
+    end
+
+    Logger.debug("Exiting the program...")
     return true
 end
 

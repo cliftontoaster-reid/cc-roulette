@@ -109,7 +109,7 @@ local function mainLoop()
                 Logger.error("No bet found")
                 return
             end
-            if rEvent[2] == "monitor_0" then
+            if rEvent[2] == config.devices.carpet then
                 local number = carpet.findClickedNumber(rEvent[3], rEvent[4])
                 if number == nil then
                     Logger.error("No number found")
@@ -117,6 +117,20 @@ local function mainLoop()
                 end
 
                 Logger.info("Bet added successfully")
+            elseif config.devices.ring then
+                local min, max = 150, 200
+                local nbr = ring.launchBall(math.random(min, max))
+
+                -- go througj all the bets, and check if the number is in the bet
+                -- if it is, then add the reward to the player by multiplying the bet by the configured reward
+                -- send a message and send a request to the server to update the player's balance
+                for _, bet in pairs(chat.getBets()) do
+                    if bet.number == nbr then
+                        local reward = config.rewards.numeric * bet.amount
+                        chat.sendMessageToPlayer(bet.player, "You won " .. reward .. " cogs!")
+                        chat.updatePlayerBalance(bet.player, reward)
+                    end
+                end
             end
         end
     end

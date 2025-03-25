@@ -28,6 +28,8 @@ print(package.path)
 
 local carpet = require("carpet")
 
+carpet.init("left")
+
 -- Add more test bets
 local bet2 = {
     amount = 50,

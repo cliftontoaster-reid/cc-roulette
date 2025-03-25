@@ -17,28 +17,7 @@
     along with this library. If not, see <https://www.gnu.org/licenses/>.
 ]]
 
-local mon = peripheral.wrap("monitor_0")
-print("Looking for monitor peripheral...")
-
-if mon == nil then
-    error("Monitor not found", 0)
-    return
-end
-print("Monitor found: " .. peripheral.getName(mon))
-
-if not mon.isColour() then
-    error("Monitor is not color", 0)
-    return
-end
-print("Monitor supports color")
-
-print("Setting monitor text scale to 0.7")
-mon.setTextScale(0.7)
-
-local w, h = mon.getSize()
-print("Monitor size: " .. w .. "x" .. h)
-
-local grid = {}
+local mon = nil
 
 ---@class Bet
 ---@field amount number
@@ -184,6 +163,7 @@ local function update()
     mon.setTextColour(colours.white)
 
     -- Fill the screen with green
+    local w, h = mon.getSize()
     for i = 1, h do
         mon.setCursorPos(1, i)
         mon.write(string.rep(" ", w))
@@ -194,7 +174,21 @@ local function update()
         printRow(rowDef)
     end
 end
-
+--- Finds the clicked number or special value based on the x and y coordinates in the layout.
+---
+---This function iterates over rows defined in the 'layout' to determine which item was clicked.
+---It handles both regular items and optionally a special column defined per row.
+---
+---Regular items are determined by dividing the x-coordinate adjusted by an offset (here -2)
+---by the spacing defined for the row, and then checking if the index is within bounds.
+---
+---For rows with a special column, if the click is outside the bounds of the regular items,
+---the function checks if the click falls within the bounds allocated for the special column.
+---
+---@param x number The x-coordinate of the click position.
+---@param y number The y-coordinate of the click position.
+---@return number|nil Returns the number corresponding to the clicked item, or a special value if the special column was clicked.
+---                   Returns nil if no valid clickable area was found.
 local function findClickedNumber(x, y)
     -- Check each row in the layout to find what was clicked
     for _, rowDef in ipairs(layout) do
@@ -244,11 +238,36 @@ local function addBet(amount, color, player, number)
     update()
 end
 
+local grid = {}
+
+---@param monitorName string
+function grid.init(monitorName)
+    mon = peripheral.wrap(monitorName)
+    print("Looking for monitor peripheral...")
+
+    if mon == nil then
+        error("Monitor not found", 0)
+        return
+    end
+    print("Monitor found: " .. peripheral.getName(mon))
+
+    if not mon.isColour() then
+        error("Monitor is not color", 0)
+        return
+    end
+    print("Monitor supports color")
+
+    print("Setting monitor text scale to 0.7")
+    mon.setTextScale(0.7)
+
+    local w, h = mon.getSize()
+    print("Monitor size: " .. w .. "x" .. h)
+    update()
+end
+
 grid.update = update
 grid.bets = bets
 grid.findClickedNumber = findClickedNumber
 grid.addBet = addBet
-
-update()
 
 return grid

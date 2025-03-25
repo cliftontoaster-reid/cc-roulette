@@ -20,28 +20,10 @@
 -- ==============================
 -- Configuration and Initialization
 -- ==============================
-local mon = peripheral.wrap("monitor_1")
+local mon = nil
 local ring = {}
 local ballPos = 1
 local lastBallPos = { x = nil, y = nil }
-
--- Monitor validation
-if mon == nil then
-    error("Monitor not found", 0)
-    return
-end
-if not mon.isColour() then
-    error("Monitor is not color", 0)
-    return
-end
-
-mon.setTextScale(0.5)
-
-local w, h = mon.getSize()
-if w < 88 or h < 44 then
-    error("Monitor is too small, must be at least 88x44, and is " .. w .. "x" .. h, 0)
-    return
-end
 
 -- ==============================
 -- Constants
@@ -444,8 +426,29 @@ function ring.getBallPosition()
     return ballPos
 end
 
--- Initialize the ring
-function ring.init()
+---Initializes the ring with a monitor peripheral
+---@param monitor string The name of the monitor peripheral
+function ring.init(monitor)
+    mon = peripheral.wrap(monitor)
+
+    -- Monitor validation
+    if mon == nil then
+        error("Monitor not found", 0)
+        return
+    end
+    if not mon.isColour() then
+        error("Monitor is not color", 0)
+        return
+    end
+
+    mon.setTextScale(0.5)
+
+    local w, h = mon.getSize()
+    if w < 88 or h < 44 then
+        error("Monitor is too small, must be at least 88x44, and is " .. w .. "x" .. h, 0)
+        return
+    end
+
     drawRing()
     drawBall(ballPos)
     return ring

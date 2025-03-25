@@ -27,7 +27,7 @@ package.path = src_path .. package_path
 print(package.path)
 
 local ring = require("ring")
-ring.init()
+ring.init("left")
 
 -- Default values
 local min = 100

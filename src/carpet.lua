@@ -277,9 +277,34 @@ function grid.init(monitorName)
     update()
 end
 
+local function isWon(bet, nbr)
+    if nbr < 50 or bet.number < 50 then
+        return bet.number == nbr, 'number'
+    end
+
+    if nbr == 51 then
+        return bet.number <= 12, 'dozen'
+    elseif nbr == 52 then
+        return bet.number > 12 and bet.number <= 24, 'dozen'
+    elseif nbr == 53 then
+        return bet.number > 24, 'dozen'
+    elseif nbr == 54 then
+        return bet.number <= 18, 'binary'
+    elseif nbr == 55 or nbr == 56 then -- red are just even numbers
+        return bet.number % 2 == 0, 'binary'
+    elseif nbr == 57 or nbr == 58 then -- black are just odd numbers
+        return bet.number == bet.number % 2 == 1, 'binary'
+    elseif nbr == 59 then
+        return bet.number > 18, 'binary'
+    end
+    return nil, "Invalid number"
+end
+
+
 grid.update = update
 grid.bets = bets
 grid.findClickedNumber = findClickedNumber
 grid.addBet = addBet
+grid.isWon = isWon
 
 return grid

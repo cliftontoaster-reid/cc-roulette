@@ -10,10 +10,10 @@
 ]]
 
 ---@class Packet
----@field id number
 ---@field type string
 ---@field sender string
 ---@field recipient string
+---@field nonce number The nonce of the request
 
 ---@class ErrorPacket : Packet
 ---@field type "ERROR"
@@ -25,7 +25,6 @@
 ---@field key string The public key of the client
 ---@field agent string The name of the client
 ---@field version string The version of the client
----@field name string The name of the client
 
 ---@class PingPacket : Packet
 ---@field type "PING"
@@ -44,20 +43,18 @@
 ---@class MethodicPacket : Packet
 ---@field type "METHODIC"
 ---@field method "GET" | "POST" | "PUT" | "DELETE" The method of the request
----@field nonce number The nonce of the request
 ---@field request string The request to be made
 ---@field data any The data to be sent
 ---@field encrypted boolean Whether the data is encrypted
----@field encryptionMethod string The encryption method used
+---@field encryptionMethod string|nil The encryption method used
 ---@field iv string|nil initialization vector for encryption
 
 ---@class MethodicResponse : Packet
 ---@field type "RESPONSE"
----@field nonce number The nonce of the request
 ---@field response string The response to the request
 ---@field data any The data to be sent
 ---@field encrypted boolean Whether the data is encrypted
----@field encryptionMethod string The encryption method used
+---@field encryptionMethod string|nil The encryption method used
 ---@field iv string|nil initialization vector for encryption
 
 ---@class Client
@@ -99,6 +96,7 @@ local client = {
 }
 
 local modem = nil
+local carpet = require("src.carpet")
 
 local function init(modemName)
     modem = peripheral.wrap(modemName)
@@ -122,14 +120,14 @@ local function init(modemName)
 
     ---@type HelloPacket
     local pck = {
-        id = os.epoch("utc"),
+        nonce = os.epoch("utc"),
+
         sender = client.id,
         recipient = client.server,
         type = "HELLO",
         key = generateRandomString(32),
-        agent = "ClientAgent",
-        version = "1.0",
-        name = "ClientName"
+        agent = "Spin",
+        version = "0.1.0",
     }
 
     modem.transmit(1, 1, pck)
@@ -158,8 +156,137 @@ local function init(modemName)
     return true
 end
 
+local function newNonce()
+    return os.epoch("utc")
+end
 
+--- Creates a new methodic request
+---
+---@param method "GET" | "POST" | "PUT" | "DELETE" The method of the request
+---@param request string The request to be made
+---@param data any The data to be sent
+---@param encryptionMethod string|nil The encryption method used
+---@param iv string|nil initialization vector for encryption
+local function newMethodic(method, request, data, encryptionMethod, iv)
+    if not modem then
+        error("Modem not initialized", 0)
+    end
+
+    local nonce = newNonce()
+
+    ---@type MethodicPacket
+    local packet = {
+        type = "METHODIC",
+        sender = client.id,
+        recipient = client.server,
+        nonce = nonce,
+        method = method,
+        request = request,
+        data = data,
+        encrypted = encryptionMethod ~= nil,
+        encryptionMethod = encryptionMethod,
+        iv = iv
+    }
+
+    modem.transmit(5, 5, packet)
+    return nonce
+end
+
+local function sendPacketSync(packet)
+    if not modem then
+        error("Modem not initialized", 0)
+    end
+    modem.transmit(5, 1, packet)
+
+    while true do
+        local rEvent = { os.pullEventRaw() }
+        if rEvent[1] == "modem_message" then
+            local event, side, channel, replyChannel, message, distance = table.unpack(rEvent)
+            return message, channel, replyChannel
+        end
+    end
+end
+
+local function sendPacketAsync(packet)
+    if not modem then
+        error("Modem not initialized", 0)
+    end
+    modem.transmit(5, 1, packet)
+
+    return packet.nonce
+end
+
+--- Pings another modem and waits for a response
+---
+---@param target string The target to ping
+---@param timeout number The timeout for the ping
+---@return boolean Whether the target responded
+---@return number The time it took for the target to respond
+local function ping(target, timeout)
+    if not modem then
+        error("Modem not initialized", 0)
+    end
+    local startTime = os.epoch("utc")
+
+    ---@type PingPacket
+    local pck = {
+        type = "PING",
+        sender = client.id,
+        recipient = target,
+        time = startTime,
+
+        nonce = newNonce()
+    }
+
+    modem.transmit(5, 1, pck)
+
+    while true do
+        local rEvent = { os.pullEventRaw() }
+
+        if os.epoch("utc") - startTime > timeout then
+            return false, 0
+        end
+        if rEvent[1] == "modem_message" then
+            local event, side, channel, replyChannel, message, distance = table.unpack(rEvent)
+
+            if message.type == "PONG" and message.recipient == client.id then
+                return true, message.time - startTime
+            end
+        end
+    end
+end
+
+---@param bet Bet
+---@param number number
+---@param config Reward
+local function sendWin(bet, number, config)
+    local won, nbr = carpet.checkWin(bet, number)
+    if won then
+        local reward = config[nbr]
+
+        if reward == nil then
+            error("No reward found for number " .. nbr, 0)
+        end
+
+        local pck = newMethodic("POST", "/win", {
+            bet = bet,
+            number = number,
+            reward = reward
+        })
+        return sendPacketSync(pck)
+    else
+        return
+    end
+end
 
 return {
-    init = init
+    init = init,
+    ping = ping,
+    newNonce = newNonce,
+
+    newMethodic = newMethodic,
+    sendPacketSync = sendPacketSync,
+    sendPacketAsync = sendPacketAsync,
+
+    sendWin = sendWin
 }

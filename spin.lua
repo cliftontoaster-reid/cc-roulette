@@ -18,10 +18,10 @@
 ]]
 
 ---@class Reward
----@field numeric number The number with witch to multiply the bet to get the payout
----@field dozen number The number of points awarded for winning the 1st 12, 2nd 12, and 3rd 12 options
----@field binary number The number of points awarded for winning the 1-18, 19-36, EVEN, and ODD options
----@field colour number The number of points awarded for winning the RED and BLACK options
+---@field numeric number The number with which to multiply the bet to get the payout
+---@field dozen number The number with which to multiply the bet for winning the 1st 12, 2nd 12, and 3rd 12 options
+---@field binary number The number with which to multiply the bet for winning the 1-18, 19-36, EVEN, and ODD options
+---@field colour number The number with which to multiply the bet for winning the RED and BLACK options
 
 ---@class DeviceConfig
 ---@field carpet string The device that is used as carpet

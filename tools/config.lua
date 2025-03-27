@@ -111,7 +111,7 @@ local function askMonitor(message)
 end
 
 local function configTable()
-    ---@type Config
+    ---@type ClientConfig
     local config = {
         devices = {
             ring = askMonitor("Please enter the name of the Ring peripheral"),

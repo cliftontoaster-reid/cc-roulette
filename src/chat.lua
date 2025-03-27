@@ -184,7 +184,7 @@ local function handleChatEvent(event)
         tmpBet.uuid = event.uuid
         msg.sendMessageToPlayer("You have been registered, you may now place a bet", event.username)
     elseif event.message == "redeem" then
-        msg.sendMessageToPlayer("Redeemed player '" .. event.username .. "'", event.username)
+        msg.sendMessageToPlayer("Please visit the chute to redeem your coins", event.username)
     end
 end
 

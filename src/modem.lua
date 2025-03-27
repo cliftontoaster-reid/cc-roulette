@@ -51,7 +51,7 @@
 
 ---@class MethodicResponse : Packet
 ---@field type "RESPONSE"
----@field response string The response to the request
+---@field code number The response code
 ---@field data any The data to be sent
 ---@field encrypted boolean Whether the data is encrypted
 ---@field encryptionMethod string|nil The encryption method used
@@ -259,6 +259,9 @@ end
 ---@param bet Bet
 ---@param number number
 ---@param config Reward
+---@return MethodicResponse | nil
+---@return number | nil
+---@return number | nil
 local function sendWin(bet, number, config)
     local won, nbr = carpet.checkWin(bet, number)
     if won then
@@ -275,7 +278,92 @@ local function sendWin(bet, number, config)
         })
         return sendPacketSync(pck)
     else
-        return
+        return nil, nil, nil
+    end
+end
+
+--- Listens for incoming messages
+---
+---@param secure boolean Whether to use secure mode
+---@param callback fun(message: MethodicPacket): MethodicResponse|ErrorPacket The callback to call when a message is received
+local function listen(secure, callback)
+    if not modem then
+        error("Modem not initialized", 0)
+    end
+
+    local key = nil
+    if not fs.exists("/.var/key") then
+        key = generateRandomString(32)
+        local file = fs.open("/.var/key", "w")
+        file.write(key)
+        file.close()
+    else
+        local file = fs.open("/.var/key", "r")
+        key = file.readAll()
+        file.close()
+    end
+
+    while true do
+        local event, side, channel, replyChannel, message, distance = os.pullEvent("modem_message")
+
+        if message.type == "METHODIC" then
+            if callback then
+                local success, err = pcall(callback, message)
+                if not success then
+                    print("Error in callback: " .. tostring(err))
+                end
+            end
+        elseif message.type == "PING" then
+            ---@type PongPacket
+            local pck = {
+                type = "PONG",
+                sender = client.id,
+                recipient = message.sender,
+                time = os.epoch("utc"),
+                nonce = message.nonce
+            }
+
+            modem.transmit(channel, replyChannel, pck)
+        elseif message.type == "HELLO" then
+            ---@type AcknPacket
+            local pck = {
+                nonce = message.nonce,
+                sender = client.id,
+                recipient = message.sender,
+                type = "ACKN",
+                key = key,
+                agent = "Stator",
+                version = "0.1.0",
+            }
+
+            if secure then
+                local i = 1
+                while fs.exists("/.var/keys/" .. i) do
+                    local file = fs.open("/.var/keys/" .. i, "r")
+                    local key = file.readAll()
+                    file.close()
+
+                    if key == message.key then
+                        modem.transmit(channel, replyChannel, pck)
+                        break
+                    end
+
+                    i = i + 1
+                end
+
+                local ErrorPacket = {
+                    type = "ERROR",
+                    sender = client.id,
+                    recipient = message.sender,
+                    nonce = message.nonce,
+                    message = "Unauthorized",
+                    code = 403
+                }
+                modem.transmit(channel, replyChannel, ErrorPacket)
+            else
+                modem.transmit(channel, replyChannel, pck)
+            end
+        end
     end
 end
 
@@ -288,5 +376,7 @@ return {
     sendPacketSync = sendPacketSync,
     sendPacketAsync = sendPacketAsync,
 
-    sendWin = sendWin
+    sendWin = sendWin,
+
+    listen = listen
 }

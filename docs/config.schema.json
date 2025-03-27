@@ -57,16 +57,21 @@
                     "type": "string",
                     "description": "The device that is used as chat box"
                 },
-                "playerplayerDetector": {
+                "playerDetector": {
                     "type": "string",
                     "description": "The device that is used as player detector"
+                },
+                "modem": {
+                    "type": "string",
+                    "description": "The device that is used as modem"
                 }
             },
             "required": [
                 "carpet",
                 "ring",
                 "chatBox",
-                "playerDetector"
+                "playerDetector",
+                "modem"
             ]
         }
     },

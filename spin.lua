@@ -28,8 +28,9 @@
 ---@field ring string The device that is used as ring
 ---@field chatBox string The device that is used as chat box
 ---@field playerDetector string The device that is used as player detector
+---@field modem string The device that is used as modem
 
----@class Config
+---@class ClientConfig
 ---@field version string The version of the config file schema using Semantic Versioning
 ---@field rewards Reward The rewards that can be given to the player
 
@@ -37,7 +38,7 @@ local toml = require("src.toml")
 
 local config
 
----@return Config
+---@return ClientConfig
 local function loadConfig()
     local file = fs.open("/config.toml", "r")
     local config = toml.parse(file.readAll())
@@ -47,8 +48,8 @@ local function loadConfig()
 end
 
 local function defaultConfig()
-    ---@type Config
-    local config = {
+    ---@type ClientConfig
+    local c = {
         version = "0.1.0",
         rewards = {
             numeric = 2,
@@ -63,6 +64,8 @@ local function defaultConfig()
             playerDetector = "playerDetector"
         }
     }
+
+    return c
 end
 
 local function saveConfig(config)
@@ -75,6 +78,20 @@ local function isConfig()
     return fs.exists("config.toml")
 end
 
+--- Write the bets and the winning number to a file
+---@param nbr number The winning number
+---@param bets Bet[] The bets that have been placed
+local function emergencyWrite(nbr, bets)
+    -- write all bets to a json file '/bets.json' and the winning number to '/win'
+
+    local file = fs.open("/bets.json", "w")
+    file.write(textutils.serialize(bets))
+    file.close()
+    file = fs.open("/win", "w")
+    file.write(textutils.serialize(nbr))
+    file.close()
+end
+
 local function mainLoop()
     while true do
         local rEvent = { os.pullEventRaw() }
@@ -82,10 +99,12 @@ local function mainLoop()
         local ring = require("src.ring")
         local chat = require("src.chat")
         local Logger = require("src.log")
+        local mod = require("src.modem")
 
         ring.init(config.devices.ring)
         chat.init(config.devices.chatBox, config.devices.playerDetector)
         carpet.init(config.devices.carpet)
+        mod.init(config.devices.modem)
 
         --- New coin
         if rEvent[1] == "redstone" then
@@ -121,16 +140,39 @@ local function mainLoop()
                 local min, max = 150, 200
                 local nbr = ring.launchBall(math.random(min, max))
 
-                -- go througj all the bets, and check if the number is in the bet
-                -- if it is, then add the reward to the player by multiplying the bet by the configured reward
-                -- send a message and send a request to the server to update the player's balance
-                for _, bet in pairs(chat.getBets()) do
-                    if bet.number == nbr then
-                        local reward = config.rewards.numeric * bet.amount
-                        chat.sendMessageToPlayer(bet.player, "You won " .. reward .. " cogs!")
-                        chat.updatePlayerBalance(bet.player, reward)
+                for _, b in pairs(chat.getBets()) do
+                    ---@type Bet
+                    local bet = b
+                    ---@type MethodicResponse|nil
+                    local res = mod.sendWin(bet, nbr, config.rewards);
+
+                    if res == nil then
+                        Logger.debug("A bet for " .. bet.player .. " has been lost, the house has won " .. bet.amount)
+                        chat.sendMessageToPlayers(
+                            "We're sorry, but you didn't win this time. Thank you for playing and contributing to the thrill! Better luck on your next spin!",
+                            bet.player)
+                    else
+                        if res.code == 200 then
+                            Logger.info("Win sent successfully")
+                            carpet.removeBet(bet)
+                        else
+                            Logger.error("Failed to send win")
+                            emergencyWrite(nbr, chat.getBets())
+                            return;
+                        end
+
+                        Logger.info("A bet for " .. bet.player .. " has been won, the player has won " .. res.data
+                            .reward)
+                        chat.sendMessageToPlayers(
+                            "🎉 WINNER WINNER! 🎉 Congratulations on your SPECTACULAR roulette win of " ..
+                            res.data.reward ..
+                            "! Retrieve your fortune at the chute using '$reedem'. Keep spinning and winning!",
+                            bet.player)
                     end
+                    os.sleep(0.3)
                 end
+                chat.clearPlayers()
+                carpet.update()
             end
         end
     end

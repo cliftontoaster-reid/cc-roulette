@@ -300,11 +300,21 @@ local function isWon(bet, nbr)
     return nil, "Invalid number"
 end
 
+local function removeBet(bet)
+    for i, v in ipairs(bets) do
+        if v == bet then
+            table.remove(bets, i)
+            return
+        end
+    end
+    update()
+end
 
 grid.update = update
 grid.bets = bets
 grid.findClickedNumber = findClickedNumber
 grid.addBet = addBet
 grid.isWon = isWon
+grid.removeBet = removeBet
 
 return grid

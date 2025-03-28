@@ -286,7 +286,7 @@ end
 ---
 ---@param secure boolean Whether to use secure mode
 ---@param callback fun(message: MethodicPacket): MethodicResponse|ErrorPacket The callback to call when a "modem_message" event is received
----@param fallbackCallback fun(event: any[]): void The callback to call when a different event is received
+---@param fallbackCallback fun(event: any[]): nil The callback to call when a different event is received
 local function listen(secure, callback, fallbackCallback)
     if not modem then
         error("Modem not initialized", 0)

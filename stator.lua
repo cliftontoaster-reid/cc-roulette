@@ -47,7 +47,7 @@ db.init("/.db/")
 ---@return ServerConfig
 local function loadConfig()
     local file = fs.open(configPath, "r")
-    local config = toml.parse(file.readAll())
+    config = toml.parse(file.readAll())
 
     file.close()
     return config
@@ -69,7 +69,7 @@ end
 
 local function saveConfig()
     local file = fs.open(configPath, "w")
-    file.write(toml.stringify(config))
+    file.write(toml.encode(config))
     file.close()
 end
 
@@ -206,7 +206,7 @@ end
 
 local function init()
     if fs.exists(configPath) then
-        config = loadConfig()
+        loadConfig()
     else
         config = defaultConfig()
         saveConfig()

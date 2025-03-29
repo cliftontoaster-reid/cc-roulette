@@ -114,14 +114,6 @@ local tmpBet = {
     amount = 0,
     player = nil,
 }
-if msg == nil then
-    error("ChatBox not found", 0)
-    return
-end
-if players == nil then
-    error("PlayerDetector not found", 0)
-    return
-end
 
 local PLAYERZONE = 5
 local COMMANDS = {

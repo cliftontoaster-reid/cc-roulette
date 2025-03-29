@@ -26,6 +26,23 @@ local CONFIG = {
     VERSION_FILE = "/tools/roulette/version",
 }
 
+shell.run("wget",
+    "https://github.com/cliftontoaster-reid/cc-roulette/raw/b0fc2cc1916aa15622872db49048ed76808212c1/config.lua",
+    "/config.lua")
+shell.run("mkdir", "/src")
+shell.run("wget",
+    "https://github.com/cliftontoaster-reid/cc-roulette/raw/b0fc2cc1916aa15622872db49048ed76808212c1/src/log.lua",
+    "/src/log.lua")
+shell.run("wget",
+    "https://github.com/cliftontoaster-reid/cc-roulette/raw/b0fc2cc1916aa15622872db49048ed76808212c1/src/semver.lua",
+    "/src/semver.lua")
+shell.run("wget",
+    "https://github.com/cliftontoaster-reid/cc-roulette/raw/b0fc2cc1916aa15622872db49048ed76808212c1/src/gh.lua",
+    "/src/gh.lua")
+shell.run("wget",
+    "https://github.com/cliftontoaster-reid/cc-roulette/raw/b0fc2cc1916aa15622872db49048ed76808212c1/src/toml.lua",
+    "/src/toml.lua")
+
 local Logger = require("src.log")
 local semver = require("src.semver")
 local gh = require("src.gh")

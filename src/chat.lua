@@ -230,7 +230,7 @@ msgFuncs.init = init
 ---@return nil
 msgFuncs.sendMessage = function(message)
     if msg then
-        msg.sendMessage(message)
+        msg.sendMessage(message, "SoSpin")
     else
         error("ChatBox not initialized", 0)
     end
@@ -242,7 +242,7 @@ end
 ---@return nil
 msgFuncs.sendMessageToPlayer = function(message, player)
     if msg then
-        msg.sendMessageToPlayer(message, player)
+        msg.sendMessageToPlayer(message, player, "SoSpin")
     else
         error("ChatBox not initialized", 0)
     end

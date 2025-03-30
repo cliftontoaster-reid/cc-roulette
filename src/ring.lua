@@ -29,8 +29,8 @@ local lastBallPos = { x = nil, y = nil }
 -- Constants
 -- ==============================
 local RING_SIZE = 36
-local ELEMENT_WIDTH = 9
-local ELEMENT_HEIGHT = 6
+local ELEMENT_WIDTH = 6
+local ELEMENT_HEIGHT = 3
 local SPACING_X = ELEMENT_WIDTH
 local SPACING_Y = ELEMENT_HEIGHT
 local START_X = 4
@@ -43,7 +43,8 @@ local COLOR = {
     BLACK = colors.black,
     WHITE = colors.white,
     BLUE = colors.blue,
-    GRAY = colors.gray
+    GRAY = colors.gray,
+    LIGHT = colors.lightGray,
 }
 
 -- ==============================
@@ -95,12 +96,9 @@ end
 ---@param y number Top position
 local function drawBallElement(x, y)
     local ball = {
-        "   000   ",
-        "  00000  ",
-        " 0000000 ",
-        " 0000000 ",
-        "  00000  ",
-        "   000   ",
+        "  00  ",
+        "000000",
+        "  00  ",
     }
 
     for i = 1, #ball do
@@ -243,44 +241,50 @@ end
 ---@param startX number Starting X position
 ---@param startY number Starting Y position
 local function drawMiddleDecoration(startX, startY)
-    local middleSizeX = 12
-    local middleSizeY = 12
-    local ringSizeX = ELEMENT_WIDTH * 12
-    local ringSizeY = ELEMENT_HEIGHT * 12
+    -- Calculate the center of the ring
+    local endX = SPACING_X * 12 + START_X - 1
+    local endY = SPACING_Y * 12 + START_Y - 1
+    local centerX = (startX + endX) / 2
+    local centerY = (startY + endY) / 2
 
-    local middleX = startX + (ringSizeX - middleSizeX) / 2
-    local middleY = startY + (ringSizeY - middleSizeY) / 2
+    local writableStartX = startX + ELEMENT_WIDTH * 2
+    local writableEndX = endX - ELEMENT_WIDTH * 2
+    local writableStartY = startY + ELEMENT_HEIGHT * 2
+    local writableEndY = endY - ELEMENT_HEIGHT * 2
 
-    -- Points for drawing
-    local left = startX + (ELEMENT_WIDTH * 2)
-    local top = startY + (ELEMENT_HEIGHT * 2)
-    local right = left + (middleSizeX * 6) - 1
-    local bottom = top + (middleSizeY * 4) - 1
-    local midX = middleX + middleSizeX / 2
+    -- Ball size
+    local ballRadius = 4
 
-    -- Draw horizontal line across middle
-    drawLine(left, middleY + middleSizeY / 2, right, middleY + middleSizeY / 2, COLOR.WHITE, 1)
+    -- Draw a line at the horizontal center going from left to right
+    drawLine(writableStartX, centerY, writableEndX, centerY, COLOR.WHITE, 1)
 
-    -- Draw vertical line through middle
-    drawLine(midX, top, midX, bottom, COLOR.WHITE, 1)
+    -- Draw a line at the vertical center going from top to bottom
+    drawLine(centerX, writableStartY, centerX, writableEndY, COLOR.WHITE, 1)
 
-    -- Draw diagonal lines
-    drawLine(left, top, right, bottom, COLOR.WHITE, 2)
-    drawLine(right, top, left, bottom, COLOR.WHITE, 2)
+    -- Write a diagonal line from top-left to bottom-right
+    drawLine(writableStartX, writableStartY, writableEndX, writableEndY, COLOR.WHITE, 1)
 
-    -- Draw outer square
-    drawLine(left, top, right, top, COLOR.WHITE, 1)
-    drawLine(right, top, right, bottom, COLOR.WHITE, 1)
-    drawLine(right, bottom, left, bottom, COLOR.WHITE, 1)
-    drawLine(left, bottom, left, top, COLOR.WHITE, 1)
+    -- Write a diagonal line from top-right to bottom-left
+    drawLine(writableEndX, writableStartY, writableStartX, writableEndY, COLOR.WHITE, 1)
 
-    -- Draw circle in the middle
+    -- Draw a square around the center, with a line encasing the entire writable area
+    drawLine(writableStartX, writableStartY, writableEndX, writableStartY, COLOR.LIGHT, 1)
+    drawLine(writableStartX, writableStartY, writableStartX, writableEndY, COLOR.LIGHT, 1)
+    drawLine(writableEndX, writableStartY, writableEndX, writableEndY, COLOR.LIGHT, 1)
+    drawLine(writableStartX, writableEndY, writableEndX, writableEndY, COLOR.LIGHT, 1)
+
+    -- Draw the central ball
     mon.setBackgroundColor(COLOR.GRAY)
-    for i = 0, middleSizeX - 1 do
-        for j = 0, middleSizeY - 1 do
-            if (i - middleSizeX / 2) ^ 2 + (j - middleSizeY / 2) ^ 2 < (middleSizeX / 2) ^ 2 then
-                mon.setCursorPos(middleX + i, middleY + j)
-                mon.write(" ")
+    for y = -ballRadius, ballRadius do
+        for x = -ballRadius, ballRadius do
+            -- Check if point is within circle
+            if x * x + y * y <= ballRadius * ballRadius then
+                local drawX = centerX + x
+                local drawY = centerY + y
+                if isInBounds(drawX, drawY) then
+                    mon.setCursorPos(drawX, drawY)
+                    mon.write(" ")
+                end
             end
         end
     end
@@ -441,13 +445,24 @@ function ring.init(monitor)
         return
     end
 
-    mon.setTextScale(0.5)
-
     local w, h = mon.getSize()
-    if w < 88 or h < 44 then
-        error("Monitor is too small, must be at least 88x44, and is " .. w .. "x" .. h, 0)
+    -- Center the ring on the monitor
+    local totalWidth = SPACING_X * 12
+    local totalHeight = SPACING_Y * 12
+
+    if w < totalWidth or h < totalHeight then
+        error("Monitor is too small to display the ring", 0)
         return
     end
+
+    START_X = math.floor((w - totalWidth) / 2)
+    START_Y = math.floor((h - totalHeight) / 2)
+
+    -- Ensure minimum margins
+    START_X = math.max(START_X, 2)
+    START_Y = math.max(START_Y, 2)
+
+    mon.setTextScale(0.5)
 
     drawRing()
     drawBall(ballPos)

@@ -35,6 +35,7 @@ local NUMBER_WIDTH = 6                            -- Width of the number display
 local DOZEN_WIDTH = 10                            -- Width for dozen columns (1st 12, etc.)
 local SPECIAL_SPACING = (NUMBER_SPACING * 12) / 6 -- Distance between special displays
 local SPECIAL_WIDTH = SPECIAL_SPACING * 0.85      -- Width of the special display area
+local MAX_BETS = 5
 
 -- Assign values above 50 for special options
 local specialValues = {
@@ -60,7 +61,7 @@ local layout = {
         specialWidth = DOZEN_WIDTH
     },
     {
-        rowPos = 11,
+        rowPos = 1 + (MAX_BETS + 2) * 1,
         items = { 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24 },
         special = "2nd 12",
         spacing = NUMBER_SPACING,
@@ -68,7 +69,7 @@ local layout = {
         specialWidth = DOZEN_WIDTH
     },
     {
-        rowPos = 21,
+        rowPos = 1 + (MAX_BETS + 2) * 2,
         items = { 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36 },
         special = "3rd 12",
         spacing = NUMBER_SPACING,
@@ -76,7 +77,7 @@ local layout = {
         specialWidth = DOZEN_WIDTH
     },
     {
-        rowPos = 31,
+        rowPos = 1 + (MAX_BETS + 2) * 3,
         items = { "1 to 18", "19 to 36", "Even", "Red", "Black", "Odd" },
         spacing = SPECIAL_SPACING,
         itemWidth = SPECIAL_WIDTH
@@ -277,29 +278,6 @@ function grid.init(monitorName)
     update()
 end
 
-local function isWon(bet, nbr)
-    if nbr < 50 or bet.number < 50 then
-        return bet.number == nbr, 'number'
-    end
-
-    if nbr == 51 then
-        return bet.number <= 12, 'dozen'
-    elseif nbr == 52 then
-        return bet.number > 12 and bet.number <= 24, 'dozen'
-    elseif nbr == 53 then
-        return bet.number > 24, 'dozen'
-    elseif nbr == 54 then
-        return bet.number <= 18, 'binary'
-    elseif nbr == 55 or nbr == 56 then -- red are just even numbers
-        return bet.number % 2 == 0, 'binary'
-    elseif nbr == 57 or nbr == 58 then -- black are just odd numbers
-        return bet.number == bet.number % 2 == 1, 'binary'
-    elseif nbr == 59 then
-        return bet.number > 18, 'binary'
-    end
-    return nil, "Invalid number"
-end
-
 local function removeBet(bet)
     for i, v in ipairs(bets) do
         if v == bet then
@@ -311,10 +289,9 @@ local function removeBet(bet)
 end
 
 grid.update = update
-grid.bets = bets
+grid.getBets = function() return bets end
 grid.findClickedNumber = findClickedNumber
 grid.addBet = addBet
-grid.isWon = isWon
 grid.removeBet = removeBet
 
 return grid

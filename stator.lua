@@ -20,17 +20,14 @@
 ---@class ServerDevice
 ---@field modem string The device that is used as modem
 ---@field chatBox string The device that is used as chat
----@field redstone "top"|"bottom"|"left"|"right"|"front"|"back" The side that is used for redstone
 
 ---@class ServerConfig
 ---@field version string The version of the config file schema using Semantic Versioning
 ---@field devices ServerDevice The devices that are used in the server
 
----@class PlayerData
----@field name string
----@field uuid string
+---@class PlayerEntry
+---@field player string
 ---@field balance number
----@field bets number[]
 
 local toml = require("src.toml")
 local configPath = "/sconfig.toml"
@@ -60,7 +57,7 @@ local function defaultConfig()
         devices = {
             modem = "top",
             chatBox = "bottom",
-            redstone = "back"
+            playerDetector = "left"
         }
     }
 
@@ -73,61 +70,20 @@ local function saveConfig()
     file.close()
 end
 
-
-
----@param req MethodicPacket
-local function handleRequests(req)
-    if req.method == "POST" then
-        if req.request == "/win" then
-            ---@class WinRequest
-            ---@field bet Bet
-            ---@field number number
-            ---@field reward number
-
-            ---@type WinRequest
-            local reqData = req.data
-
-            if db.existsQuery("players", { uuid = reqData.bet.uuid }) then
-                ---@type PlayerData
-                local player = db.getQuery("players", { uuid = reqData.bet.uuid })
-                player.balance = player.balance + reqData.reward
-                db.update("players", player.uuid, player)
-            else
-                -- create new player
-
-                ---@type PlayerData
-                local newPlayer = {
-                    name = reqData.bet.name,
-                    uuid = reqData.bet.uuid,
-                    balance = reqData.reward,
-                    bets = {}
-                }
-                local suc, err = db.create("players", newPlayer.uuid, newPlayer)
-                if not suc then
-                    ---@type ErrorPacket
-                    local res = {
-                        code = 500,
-                        message = err or "Internal Server Error",
-                        nonce = req.nonce,
-                        recipient = req.sender,
-                        sender = "HEAD",
-                        type = "ERROR"
-                    }
-                    return res
-                end
-            end
-        end
-    end
+local function playersInBorders(startPos, endPos)
+    -- Get all players within the defined coordinates
+    local players = peripheral.call(config.devices.playerDetector, "getPlayersInCoords", startPos, endPos)
+    return players or {}
 end
 
-local function isAround(uuid, radius)
-    local around = peripheral.call("playerDetector", "getPlayersInCubic", radius[1], radius[2], radius[3])
-    for _, player in ipairs(around) do
-        if player.uuid == uuid then
+local function isInside(username, startPos, endPos)
+    -- Check if specific player is inside the defined area
+    local players = playersInBorders(startPos, endPos)
+    for _, player in ipairs(players) do
+        if player == username then
             return true
         end
     end
-
     return false
 end
 
@@ -146,62 +102,19 @@ local function getSpursAmount()
     return spurs
 end
 
-local function getPlayer(uuid)
-    if db.existsQuery("players", { uuid = uuid }) then
-        ---@type PlayerData
-        local player = db.getQuery("players", { uuid = uuid })
-        return player
-    end
-
-    return 0
-end
-
-local function handleEvents(event)
-    if event[1] == "chat" then
-        local chatEvent = {
-            type = event[1],
-            username = event[2],
-            message = event[3],
-            uuid = event[4],
-            isHidden = event[5]
+local function getPlayer(player)
+    if db.existsQuery("players", { player = player }) then
+        return db.getQuery("players", { player = player })
+    else
+        local playerEntry = {
+            player = player,
+            balance = 0
         }
-        if not chatEvent.isHidden or not isAround(chatEvent.uuid, { 4, 10, 4 }) then
-            return;
-        end
-
-        -- remove the first character
-        local cmd = chatEvent.message:sub(2)
-        if cmd == "redeem" then
-            local spurs = getSpursAmount()
-            local data = getPlayer(chatEvent.uuid)
-
-            if data.balance > spurs then
-                chat.sendMessageToPlayer("We are sorry, but we cannot process your request at this time.",
-                    chatEvent.username, "Spin")
-                return
-            end
-            if data.balance == 0 then
-                chat.sendMessageToPlayer("You have no balance to redeem.", chatEvent.username, "Spin")
-                return
-            end
-
-            -- send a one tick pulse to the redstone for every coin in balance
-            chat.sendMessageToPlayer("Redeeming your balance of " .. data.balance .. " spurs.", chatEvent.username,
-                "Spin")
-            for _ = 1, data.balance do
-                peripheral.call(config.devices.redstone, "emit", "back", 15)
-                os.sleep(0.1)
-                peripheral.call(config.devices.redstone, "emit", "back", 0)
-                os.sleep(0.1)
-            end
-            chat.sendMessageToPlayer("Redeemed " .. data.balance .. " spurs.", chatEvent.username, "Spin")
-
-            -- update player balance
-            data.balance = 0
-            db.update("players", chatEvent.uuid, data)
-            chat.sendMessageToPlayer("Your balance has been reset, have a wonderful day.", chatEvent.username, "Spin")
-        end
+        db.insert("players", playerEntry)
+        return playerEntry
     end
+
+    return nil
 end
 
 local function init()
@@ -213,10 +126,137 @@ local function init()
         error("Config file not found. Created default config file at " .. configPath)
     end
 
-    modem.init(config.devices.modem)
-    modem.listen(false, handleRequests, handleEvents)
-
     chat = peripheral.wrap(config.devices.chatBox)
+    if chat == nil then
+        error("ChatBox not found", 0)
+        return
+    end
 end
 
 init()
+
+local function string_ends_with(str, suffix)
+    return str:find(suffix, - #suffix, true) ~= nil
+end
+
+local function handleMessage(channel, reply, message)
+    if not (channel == 1 and reply == 1) then
+        return
+    end
+
+    -- Check if the message type ends with "Res" to determine if it is a response
+    if string_ends_with(message.type, "Res") then
+        return
+    end
+    local response = {
+        type = "genRes",
+        code = 404,
+        message = "Unknown message type"
+    }
+
+    if message.type == "win" then
+        ---@type PlayerEntry|nil
+        local pl = getPlayer(message.player)
+        if pl == nil then
+            print("Player not found")
+            db.create("players", message.player, { player = message.player, balance = 0 })
+
+            pl = db.read("players", message.player)
+        end
+
+        pl.balance = pl.balance + message.payout
+        local succ, err = db.update("players", pl.player, pl)
+        local ret
+        if not succ then
+            ret = {
+                code = 500,
+                message = "Error updating player balance: " .. err
+            }
+            print(ret.message)
+        else
+            ret = {
+                code = 200,
+                message = "Player balance updated successfully"
+            }
+            print(ret.message)
+        end
+
+        -- Send a response back to the sender
+        response = {
+            type = "winRes",
+            code = ret.code,
+            message = ret.message
+        }
+    elseif message.type == "balance" then
+        local pl = getPlayer(message.player)
+        if pl == nil then
+            print("Player not found")
+            response = {
+                type = "balanceRes",
+                code = 404,
+                message = "Player not found"
+            }
+        else
+            response = {
+                type = "balanceRes",
+                code = 200,
+                message = "Player balance retrieved successfully",
+                balance = pl.balance
+            }
+        end
+    elseif message.type == "resetBalance" then
+        local pl = getPlayer(message.player)
+        if pl == nil then
+            print("Player not found")
+            response = {
+                type = "resetBalanceRes",
+                code = 200, -- As we are reseting the balance, if the player is not found, we can consider it a success
+                message = "Player not found"
+            }
+        else
+            pl.balance = 0
+            local succ, err = db.update("players", pl.player, pl)
+            local ret
+            if not succ then
+                ret = {
+                    code = 500,
+                    message = "Error updating player balance: " .. err
+                }
+                print(ret.message)
+            else
+                ret = {
+                    code = 200,
+                    message = "Player balance reset successfully"
+                }
+                print(ret.message)
+            end
+
+            response = {
+                type = "resetBalanceRes",
+                code = ret.code,
+                message = ret.message
+            }
+        end
+    elseif message.type == "playersInSquare" then
+        local startPos = message.startPos
+        local endPos = message.endPos
+
+        local players = playersInBorders(startPos, endPos)
+
+        response = {
+            type = "playersInSquareRes",
+            code = 200,
+            players = players,
+            numberOfPlayers = #players
+        }
+    end
+
+    modem.transmit(1, 1, response)
+end
+
+while true do
+    local event, side, channel, reply, message = os.pullEvent("modem_message")
+    if event == "modem_message" then
+        handleMessage(channel, reply, message)
+    end
+end

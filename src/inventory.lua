@@ -128,9 +128,30 @@ local function getPlayer(idx)
     return own
 end
 
+local function init(config)
+    if config == nil then
+        error("Config is nil")
+        return
+    end
+
+    -- assign the table<number, IvMnager> to invManagers using the config's
+    -- table<number, string> as the key and the peripheral.wrap function to turn the
+    -- string into a IvMnager
+
+    for idx, name in pairs(config) do
+        local player = peripheral.wrap(name)
+        if player then
+            invManagers[idx] = player
+        else
+            error("Peripheral " .. name .. " not found")
+        end
+    end
+end
+
 inv.getMoneyInPlayer = getMoneyInPlayer
 inv.takeMoneyFromPlayer = takeMoneyFromPlayer
 inv.addMoneyToPlayer = addMoneyToPlayer
 inv.getPlayer = getPlayer
+inv.init = init
 
 return inv

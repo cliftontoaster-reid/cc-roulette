@@ -159,9 +159,10 @@ local function handleMessage(channel, reply, message)
         local pl = getPlayer(message.player)
         if pl == nil then
             print("Player not found")
-            db.create("players", message.player, { player = message.player, balance = 0 })
+            local new = { player = message.player, balance = 0 }
+            db.create("players", message.player, new)
 
-            pl = db.read("players", message.player)
+            pl = new
         end
 
         pl.balance = pl.balance + message.payout

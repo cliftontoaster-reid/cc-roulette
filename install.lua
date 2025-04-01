@@ -26,27 +26,27 @@ local CONFIG = {
     VERSION_FILE = "/tools/roulette/version",
 }
 
-shell.run("wget",
-    "https://github.com/cliftontoaster-reid/cc-roulette/raw/b0fc2cc1916aa15622872db49048ed76808212c1/config.lua",
-    "/config.lua")
-shell.run("mkdir", "/src")
-shell.run("wget",
-    "https://github.com/cliftontoaster-reid/cc-roulette/raw/b0fc2cc1916aa15622872db49048ed76808212c1/src/log.lua",
-    "/src/log.lua")
-shell.run("wget",
-    "https://github.com/cliftontoaster-reid/cc-roulette/raw/b0fc2cc1916aa15622872db49048ed76808212c1/src/semver.lua",
-    "/src/semver.lua")
-shell.run("wget",
-    "https://github.com/cliftontoaster-reid/cc-roulette/raw/b0fc2cc1916aa15622872db49048ed76808212c1/src/gh.lua",
-    "/src/gh.lua")
-shell.run("wget",
-    "https://github.com/cliftontoaster-reid/cc-roulette/raw/b0fc2cc1916aa15622872db49048ed76808212c1/src/toml.lua",
-    "/src/toml.lua")
-
 local Logger = require("src.log")
 local semver = require("src.semver")
-local gh = require("src.gh")
-local getReleases = gh.getReleases
+
+--- Fetches the releases for a given GitHub repository.
+--- @param githubUser string The GitHub username of the repository owner.
+--- @param githubRepo string The GitHub repository name.
+--- @param logger Logger The logger to use for output.
+--- @return Release[]|nil The releases for the repository, or nil if an error occurred.
+local function getReleases(githubUser, githubRepo, logger)
+    local url = string.format("https://api.github.com/repos/%s/%s/releases", githubUser, githubRepo)
+    logger.info("Fetching releases from GitHub API...")
+    local response = http.get(url)
+    if not response then
+        logger.error("Failed to fetch releases from GitHub API")
+        return nil
+    end
+    local data = response.readAll()
+    response.close()
+    logger.debug("Received " .. #data .. " bytes of release data")
+    return textutils.unserializeJSON(data)
+end
 
 -- Update the main log function to align output
 function Logger.log(level, message)

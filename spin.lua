@@ -36,6 +36,7 @@
 
 local toml = require("src.toml")
 
+---@type ClientConfig
 local config
 
 ---@return ClientConfig
@@ -92,6 +93,64 @@ local function emergencyWrite(nbr, bets)
     file.close()
 end
 
+--- Finds the amount of coins a player has based on the Inventory Manager's index
+---@param idx number The index/color of the player/Inventory Manager
+local function getUserBallance(idx)
+
+end
+
+---@param bet Bet The bet to check
+---@param nbr number The winning number
+local function getPayout(bet, nbr)
+    -- handle numeric bets
+    if bet.number <= 36 and bet.number >= 0 then
+        if bet.number == nbr then
+            return bet.amount * config.rewards.numeric
+        end
+    end
+
+    -- handle dozen bets
+    if bet.number == 51 then
+        if nbr >= 1 and nbr <= 12 then
+            return bet.amount * config.rewards.dozen
+        end
+    end
+    if bet.number == 52 then
+        if nbr >= 13 and nbr <= 24 then
+            return bet.amount * config.rewards.dozen
+        end
+    end
+    if bet.number == 53 then
+        if nbr >= 25 and nbr <= 36 then
+            return bet.amount * config.rewards.dozen
+        end
+    end
+
+    -- handle binary bets, 54 55 58 59
+    if bet.number == 54 then -- 1 to 18
+        if nbr >= 1 and nbr <= 18 then
+            return bet.amount * config.rewards.binary
+        end
+    end
+    if bet.number == 55 or bet.number == 56 then -- even / red
+        if nbr % 2 == 0 then
+            return bet.amount * config.rewards.binary
+        end
+    end
+    if bet.number == 58 or bet.number == 57 then -- odd / black
+        if nbr % 2 == 1 then
+            return bet.amount * config.rewards.binary
+        end
+    end
+    if bet.number == 59 then -- 19 to 36
+        if nbr >= 19 and nbr <= 36 then
+            return bet.amount * config.rewards.binary
+        end
+    end
+
+    return nil
+end
+
 local function mainLoop()
     while true do
         local rEvent = { os.pullEventRaw() }
@@ -104,7 +163,6 @@ local function mainLoop()
         ring.init(config.devices.ring)
         chat.init(config.devices.chatBox, config.devices.playerDetector)
         carpet.init(config.devices.carpet)
-        mod.init(config.devices.modem)
 
         --- New coin
         if rEvent[1] == "redstone" then
@@ -123,56 +181,41 @@ local function mainLoop()
 
             --- New monitor touch
         elseif rEvent[1] == "monitor_touch" then
-            local bet = chat.getBet()
-            if bet == nil then
-                Logger.error("No bet found")
-                return
-            end
             if rEvent[2] == config.devices.carpet then
+                local bet = chat.getBet()
+                if bet == nil then
+                    Logger.error("No bet found")
+                    return
+                end
+
                 local number = carpet.findClickedNumber(rEvent[3], rEvent[4])
                 if number == nil then
                     Logger.error("No number found")
                     return
                 end
 
+
                 Logger.info("Bet added successfully")
             elseif config.devices.ring then
                 local min, max = 150, 200
                 local nbr = ring.launchBall(math.random(min, max))
+                local bets = carpet.getBets()
 
-                for _, b in pairs(chat.getBets()) do
-                    ---@type Bet
-                    local bet = b
-                    ---@type MethodicResponse|nil
-                    local res = mod.sendWin(bet, nbr, config.rewards);
+                for _, b in ipairs(bets) do
+                    local payout = getPayout(b, nbr)
 
-                    if res == nil then
-                        Logger.debug("A bet for " .. bet.player .. " has been lost, the house has won " .. bet.amount)
-                        chat.sendMessageToPlayers(
-                            "We're sorry, but you didn't win this time. Thank you for playing and contributing to the thrill! Better luck on your next spin!",
-                            bet.player)
-                    else
-                        if res.code == 200 then
-                            Logger.info("Win sent successfully")
-                            carpet.removeBet(bet)
+                    if payout then
+                        Logger.info("Payout for bet: " .. payout)
+                        if mod.sendWin(b.player, b, payout) == 200 then
+                            Logger.info("Payout sent to server")
+                            chat.sendMessageToPlayer("You won " .. payout .. " coins!", b.player)
                         else
-                            Logger.error("Failed to send win")
-                            emergencyWrite(nbr, chat.getBets())
-                            return;
+                            Logger.error("Error sending payout to server")
                         end
-
-                        Logger.info("A bet for " .. bet.player .. " has been won, the player has won " .. res.data
-                            .reward)
-                        chat.sendMessageToPlayers(
-                            "🎉 WINNER WINNER! 🎉 Congratulations on your SPECTACULAR roulette win of " ..
-                            res.data.reward ..
-                            "! Retrieve your fortune at the chute using '$reedem'. Keep spinning and winning!",
-                            bet.player)
+                    else
+                        Logger.info("No payout for bet")
                     end
-                    os.sleep(0.3)
                 end
-                chat.clearPlayers()
-                carpet.update()
             end
         end
     end

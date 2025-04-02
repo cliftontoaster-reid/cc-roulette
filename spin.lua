@@ -44,10 +44,10 @@ local currentBetter = -1
 ---@return ClientConfig
 local function loadConfig()
     local file = fs.open("/config.toml", "r")
-    local config = toml.parse(file.readAll())
+    local cfg = toml.parse(file.readAll())
 
     file.close()
-    return config
+    return cfg
 end
 
 local function defaultConfig()
@@ -93,12 +93,6 @@ local function emergencyWrite(nbr, bets)
     file = fs.open("/win", "w")
     file.write(textutils.serialize(nbr))
     file.close()
-end
-
---- Finds the amount of coins a player has based on the Inventory Manager's index
----@param idx number The index/color of the player/Inventory Manager
-local function getUserBallance(idx)
-
 end
 
 ---@param bet Bet The bet to check
@@ -154,99 +148,118 @@ local function getPayout(bet, nbr)
 end
 
 local function mainLoop()
+    -- Load modules once outside the loop
+    local carpet = require("src.carpet")
+    local ring = require("src.ring")
+    local Logger = require("src.log")
+    local mod = require("src.modem")
+    local iv = require("src.inventory")
+
+    -- Initialize devices
+    iv.init(config.devices.ivmanagers)
+    ring.init(config.devices.ring)
+    carpet.init(config.devices.carpet)
+
+    -- Handle redstone signal events
+    local function handleRedstoneEvent()
+        local redStreingth = redstone.getAnalogInput(config.devices.redstone)
+        local id = redStreingth - config.devices.ivmanBigger
+        if id < 0 then
+            Logger.error("Redstone signal too low")
+            return
+        end
+        -- Store the player id in currentBetter
+        currentBetter = id
+        Logger.info("Player " .. id .. " clicked on the button")
+    end
+
+    -- Handle carpet monitor touch events
+    local function handleCarpetTouch(x, y)
+        if currentBetter == -1 then
+            Logger.error("No player detected")
+            return
+        end
+
+        local ballance = iv.getMoneyInPlayer(currentBetter)
+        if ballance == nil or ballance <= 0 then
+            Logger.error("Player " .. currentBetter .. " has no money")
+            return
+        end
+
+        local nbr = carpet.findClickedNumber(x, y)
+        if nbr == nil then
+            Logger.error("No number clicked")
+            return
+        end
+
+        local res = iv.takeMoneyFromPlayer(currentBetter, 1)
+        if res == nil then
+            Logger.error("Error taking money from player " .. currentBetter)
+            return
+        end
+
+        local player = iv.getPlayer(currentBetter)
+        carpet.addBet(1, currentBetter, player or "", nbr)
+        Logger.info("Bet added successfully")
+    end
+
+    -- Handle ring monitor touch events
+    local function handleRingTouch()
+        local min, max = 150, 200
+        local nbr = ring.launchBall(math.random(min, max))
+        local bets = carpet.getBets()
+
+        for _, b in ipairs(bets) do
+            local payout = getPayout(b, nbr)
+
+            if payout then
+                Logger.info("Payout for bet: " .. payout)
+                if mod.sendWin(b.player, b, payout) == 200 then
+                    Logger.info("Payout sent to server")
+                    local idx = iv.findPlayer(b.player)
+                    if idx == nil then
+                        Logger.error("Player not found")
+                        return
+                    end
+
+                    local res = iv.addMoneyToPlayer(idx, payout)
+                    if res == nil then
+                        Logger.error("Error adding money to player " .. b.player)
+                        return
+                    end
+
+                    Logger.info("Money added to player " .. b.player)
+                    carpet.removeBet(b)
+                    Logger.info("Bet removed for player " .. b.player)
+                    mod.resetBallance(b.player)
+                    return
+                else
+                    Logger.error("Error sending payout to server")
+                    emergencyWrite(nbr, bets)
+                end
+            else
+                Logger.info("No payout for bet")
+            end
+        end
+    end
+
+    -- Handle monitor touch events
+    local function handleMonitorTouch(monitorName, x, y)
+        if monitorName == config.devices.carpet then
+            handleCarpetTouch(x, y)
+        elseif monitorName == config.devices.ring then
+            handleRingTouch()
+        end
+    end
+
+    -- Main event loop
     while true do
         local rEvent = { os.pullEventRaw() }
-        local carpet = require("src.carpet")
-        local ring = require("src.ring")
-        local Logger = require("src.log")
-        local mod = require("src.modem")
-        local iv = require("src.inventory")
 
-        iv.init(config.devices.ivmanagers)
-        ring.init(config.devices.ring)
-        carpet.init(config.devices.carpet)
-
-        --- Button pressing,
         if rEvent[1] == "redstone" then
-            -- We need to check the redstone signal to see who clicked on the button
-            local redStreingth = redstone.getAnalogInput(config.devices.redstone)
-            local id = redStreingth - config.devices.ivmanBigger
-            if id < 0 then
-                Logger.error("Redstone signal too low")
-                return
-            end
-            -- We now store the player id in the currentBetter variable
-            currentBetter = id
-            Logger.info("Player " .. id .. " clicked on the button")
-
-            --- New monitor touch
+            handleRedstoneEvent()
         elseif rEvent[1] == "monitor_touch" then
-            if rEvent[2] == config.devices.carpet then
-                -- Check if the player has money in their off hand
-                -- If they do, take one coin from them and add a bet
-                -- to the colour they clicked on
-                if currentBetter == -1 then
-                    Logger.error("No player detected")
-                    return
-                end
-                local ballance = iv.getMoneyInPlayer(currentBetter)
-                if ballance == nil or ballance <= 0 then
-                    Logger.error("Player " .. currentBetter .. " has no money")
-                    return
-                end
-                local x, y = rEvent[3], rEvent[4]
-                local nbr = carpet.findClickedNumber(x, y)
-                if nbr == nil then
-                    Logger.error("No number clicked")
-                    return
-                end
-
-                local res = iv.takeMoneyFromPlayer(currentBetter, 1)
-                if res == nil then
-                    Logger.error("Error taking money from player " .. currentBetter)
-                    return
-                end
-                local player = iv.getPlayer(currentBetter)
-
-                carpet.addBet(1, currentBetter, player or "", nbr)
-
-                Logger.info("Bet added successfully")
-            elseif config.devices.ring then
-                local min, max = 150, 200
-                local nbr = ring.launchBall(math.random(min, max))
-                local bets = carpet.getBets()
-
-                for _, b in ipairs(bets) do
-                    local payout = getPayout(b, nbr)
-
-                    if payout then
-                        Logger.info("Payout for bet: " .. payout)
-                        if mod.sendWin(b.player, b, payout) == 200 then
-                            Logger.info("Payout sent to server")
-                            local idx = iv.findPlayer(b.player)
-                            if idx == nil then
-                                Logger.error("Player not found")
-                                return
-                            end
-                            local res = iv.addMoneyToPlayer(idx, payout)
-                            if res == nil then
-                                Logger.error("Error adding money to player " .. b.player)
-                                return
-                            end
-                            Logger.info("Money added to player " .. b.player)
-                            carpet.removeBet(b)
-                            Logger.info("Bet removed for player " .. b.player)
-                            mod.resetBallance(b.player)
-                            return
-                        else
-                            Logger.error("Error sending payout to server")
-                            emergencyWrite(nbr, bets)
-                        end
-                    else
-                        Logger.info("No payout for bet")
-                    end
-                end
-            end
+            handleMonitorTouch(rEvent[2], rEvent[3], rEvent[4])
         end
     end
 end

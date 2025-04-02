@@ -128,6 +128,19 @@ local function getPlayer(idx)
     return own
 end
 
+---Finds the first iv manager that is owned by player
+---@param player string The player identifier
+---@return number|nil The index of the iv manager, or nil if not found
+local function findPlayer(player)
+    for idx, iv in pairs(invManagers) do
+        local success, owner = pcall(function() return iv.getOwner() end)
+        if success and owner == player then
+            return idx
+        end
+    end
+    return nil
+end
+
 local function init(config)
     if config == nil then
         error("Config is nil")
@@ -152,6 +165,7 @@ inv.getMoneyInPlayer = getMoneyInPlayer
 inv.takeMoneyFromPlayer = takeMoneyFromPlayer
 inv.addMoneyToPlayer = addMoneyToPlayer
 inv.getPlayer = getPlayer
+inv.findPlayer = findPlayer
 inv.init = init
 
 return inv

@@ -26,9 +26,10 @@
 ---@class DeviceConfig
 ---@field carpet string The device that is used as carpet
 ---@field ring string The device that is used as ring
----@field chatBox string The device that is used as chat box
----@field playerDetector string The device that is used as player detector
 ---@field modem string The device that is used as modem
+---@field redstone string The device that is used as redstone
+---@field ivmanagers table<number, string> The devices that are used as inventory managers
+---@field ivmanBigger number The streigth of the signal for the lowest inventory manager
 
 ---@class ClientConfig
 ---@field version string The version of the config file schema using Semantic Versioning
@@ -38,6 +39,7 @@ local toml = require("src.toml")
 
 ---@type ClientConfig
 local config
+local currentBetter = -1
 
 ---@return ClientConfig
 local function loadConfig()
@@ -156,44 +158,57 @@ local function mainLoop()
         local rEvent = { os.pullEventRaw() }
         local carpet = require("src.carpet")
         local ring = require("src.ring")
-        local chat = require("src.chat")
         local Logger = require("src.log")
         local mod = require("src.modem")
+        local iv = require("src.inventory")
 
+        iv.init(config.devices.ivmanagers)
         ring.init(config.devices.ring)
-        chat.init(config.devices.chatBox, config.devices.playerDetector)
         carpet.init(config.devices.carpet)
 
-        --- New coin
+        --- Button pressing,
         if rEvent[1] == "redstone" then
-            chat.handleCoin(rEvent[1])
-
-            --- New chat message
-        elseif rEvent[1] == "chat" then
-            local chatEvent = {
-                type = rEvent[1],
-                username = rEvent[2],
-                message = rEvent[3],
-                uuid = rEvent[4],
-                isHidden = rEvent[5]
-            }
-            chat.handleChatEvent(chatEvent)
+            -- We need to check the redstone signal to see who clicked on the button
+            local redStreingth = redstone.getAnalogInput(config.devices.redstone)
+            local id = redStreingth - config.devices.ivmanBigger
+            if id < 0 then
+                Logger.error("Redstone signal too low")
+                return
+            end
+            -- We now store the player id in the currentBetter variable
+            currentBetter = id
+            Logger.info("Player " .. id .. " clicked on the button")
 
             --- New monitor touch
         elseif rEvent[1] == "monitor_touch" then
             if rEvent[2] == config.devices.carpet then
-                local bet = chat.getBet()
-                if bet == nil then
-                    Logger.error("No bet found")
+                -- Check if the player has money in their off hand
+                -- If they do, take one coin from them and add a bet
+                -- to the colour they clicked on
+                if currentBetter == -1 then
+                    Logger.error("No player detected")
+                    return
+                end
+                local ballance = iv.getMoneyInPlayer(currentBetter)
+                if ballance == nil or ballance <= 0 then
+                    Logger.error("Player " .. currentBetter .. " has no money")
+                    return
+                end
+                local x, y = rEvent[3], rEvent[4]
+                local nbr = carpet.findClickedNumber(x, y)
+                if nbr == nil then
+                    Logger.error("No number clicked")
                     return
                 end
 
-                local number = carpet.findClickedNumber(rEvent[3], rEvent[4])
-                if number == nil then
-                    Logger.error("No number found")
+                local res = iv.takeMoneyFromPlayer(currentBetter, 1)
+                if res == nil then
+                    Logger.error("Error taking money from player " .. currentBetter)
                     return
                 end
+                local player = iv.getPlayer(currentBetter)
 
+                carpet.addBet(1, currentBetter, player or "", nbr)
 
                 Logger.info("Bet added successfully")
             elseif config.devices.ring then
@@ -208,9 +223,24 @@ local function mainLoop()
                         Logger.info("Payout for bet: " .. payout)
                         if mod.sendWin(b.player, b, payout) == 200 then
                             Logger.info("Payout sent to server")
-                            chat.sendMessageToPlayer("You won " .. payout .. " coins!", b.player)
+                            local idx = iv.findPlayer(b.player)
+                            if idx == nil then
+                                Logger.error("Player not found")
+                                return
+                            end
+                            local res = iv.addMoneyToPlayer(idx, payout)
+                            if res == nil then
+                                Logger.error("Error adding money to player " .. b.player)
+                                return
+                            end
+                            Logger.info("Money added to player " .. b.player)
+                            carpet.removeBet(b)
+                            Logger.info("Bet removed for player " .. b.player)
+                            mod.resetBallance(b.player)
+                            return
                         else
                             Logger.error("Error sending payout to server")
+                            emergencyWrite(nbr, bets)
                         end
                     else
                         Logger.info("No payout for bet")

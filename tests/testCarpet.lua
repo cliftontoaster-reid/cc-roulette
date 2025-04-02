@@ -20,13 +20,13 @@
 local package_path = package.path
 
 -- Construct the new path using a relative path
-local src_path = "./../src/?.lua;"
+local src_path = "./../?.lua;"
 
 -- Prepend the 'src' path
 package.path = src_path .. package_path
 print(package.path)
 
-local carpet = require("carpet")
+local carpet = require("src.carpet")
 
 carpet.init("left")
 

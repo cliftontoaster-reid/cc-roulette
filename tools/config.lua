@@ -11,10 +11,12 @@
 
 local completion = require "cc.completion"
 
+local config = {}
+
 --- Asks the user for a yes or no response
 ---@param message string The message to display
 ---@return boolean
-local function askYesNo(message)
+function config.askYesNo(message)
     local options = { "yes", "no" }
     while true do
         write(message .. " [Y/N]: ")
@@ -27,51 +29,10 @@ local function askYesNo(message)
     end
 end
 
---- Asks the user to chose from a list of options
---- @param message string The message to display
---- @param options string[] The list of options to choose from
---- @return string
---- @return number
-local function askOption(message, options)
-    while true do
-        print(message)
-        for i, option in ipairs(options) do
-            print(i .. "? " .. option)
-        end
-
-        write("Enter the number of your choice: ")
-        local res = read(nil, nil, function(text) return completion.choice(text, options) end)
-
-        -- Find the option index
-        for i, option in ipairs(options) do
-            if option == res then
-                return option, i
-            end
-        end
-        -- If the option is not found, try again
-
-        print("Invalid option, please try again : " .. res)
-        return askOption(message, options)
-    end
-end
-
---- Asks the user for a number
---- @param message string The message to display
---- @return number
-local function askNumber(message)
-    while true do
-        print(message .. ": ")
-        local response = tonumber(read())
-        if response then
-            return response
-        end
-    end
-end
-
 --- Asks the user for a peripheral
 --- @param message string The message to display
 --- @return string
-local function askPeripheral(message)
+function config.askPeripheral(message)
     while true do
         print(message .. ": ")
         local response = read()
@@ -84,7 +45,7 @@ end
 --- Ask monitor
 --- @param message string The message to display
 --- @return string
-local function askMonitor(message)
+function config.askMonitor(message)
     while true do
         print(message .. ": ")
         local response = read()
@@ -94,23 +55,21 @@ local function askMonitor(message)
                 if monitor.isColour() then
                     monitor.setBackgroundColor(colors.red)
                     monitor.clear()
-                    askYesNo("Is the correct monitor red?")
+                    config.askYesNo("Is the correct monitor red?")
                     monitor.setBackgroundColor(colors.black)
                     monitor.clear()
                     return response
                 else
                     print("The monitor does not support color")
-                    return askMonitor(message)
+                    return config.askMonitor(message)
                 end
             else
                 print("The peripheral is not a monitor")
-                return askMonitor(message)
+                return config.askMonitor(message)
             end
         end
     end
 end
-
-local config = {}
 
 -- Helper function to ask for user input
 function config.askInput(message, default)

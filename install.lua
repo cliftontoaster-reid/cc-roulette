@@ -29,6 +29,17 @@ local CONFIG = {
 local Logger = require("src.log")
 local semver = require("src.semver")
 
+local args = { ... }
+local forceDev = false
+local forceDel = false
+for i, arg in ipairs(args) do
+    if arg == "--dev" then
+        forceDev = true
+    elseif arg == "--del" then
+        forceDel = true
+    end
+end
+
 --- Fetches the releases for a given GitHub repository.
 --- @param githubUser string The GitHub username of the repository owner.
 --- @param githubRepo string The GitHub repository name.
@@ -226,15 +237,56 @@ end
 
 -- Main execution
 local function main()
+    if forceDel then
+        Logger.info("Force deletion (--del) detected. Removing entire tools directory: " .. CONFIG.TOOLS_DIR)
+        if fs.exists(CONFIG.TOOLS_DIR) then
+            fs.delete(CONFIG.TOOLS_DIR)
+            Logger.success("Successfully removed " .. CONFIG.TOOLS_DIR)
+        else
+            Logger.warning("No tools directory found at " .. CONFIG.TOOLS_DIR)
+        end
+    end
+
     local update = false
 
     Logger.info("Starting installation of " .. CONFIG.GITHUB_REPO .. "...")
 
-    Logger.debug("Configuration settings:")
-    for key, value in pairs(CONFIG) do
-        if type(value) ~= "table" then
-            Logger.debug("  " .. key .. " = " .. tostring(value))
+    -- If the --dev flag is present, force install from the provided URL
+    if (forceDev) then
+        Logger.info("Force installation (--dev) detected. Forcing installation from dev release.")
+
+        local latest = {
+            tag_name = "vDEV",
+            tarball_url = "https://github.com/cliftontoaster-reid/cc-roulette/archive/main.tar.gz"
+        }
+
+        if fs.exists(CONFIG.ROULETTE_DIR) then
+            Logger.info("Removing existing installation due to --dev flag")
+            fs.delete(CONFIG.ROULETTE_DIR)
         end
+
+        downloadCCArchive()
+        downloadAndExtractRelease(latest)
+
+        printHeader("Installation complete")
+        Logger.success("Installation (dev) of " .. CONFIG.GITHUB_REPO .. " completed successfully")
+
+        local versionFile = fs.open(CONFIG.VERSION_FILE, "w")
+        versionFile.writeLine(latest.tag_name:sub(2))
+        versionFile.close()
+
+        local config = require("tools.config")
+        if config.askYesNo("Would you like to configure the program now?") then
+            local dev = config.askOption("What device would you like to configure?", { "Table", "Server" })
+            if dev == "Table" then
+                config.configTable()
+            elseif dev == "Server" then
+                error("Server configuration not yet implemented, we apologize for the inconvenience")
+            end
+        end
+
+        Logger.debug("Exiting the program (dev mode)...")
+        return true
     end
 
     local releases = getReleases(CONFIG.GITHUB_USER, CONFIG.GITHUB_REPO, Logger)

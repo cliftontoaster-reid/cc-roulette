@@ -16,8 +16,8 @@ ToasterGen Spin is a commissioned roulette game for an in-game ComputerCraft cas
 - **Player Detection**:
   Detects players in a defined area using a player detector peripheral. The `stator.lua` script uses the `getPlayersInBorders` function to identify players within the designated zone.
 
-- **Chat Integration**:
-  Allows players to register and redeem their winnings through in-game chat commands (see [`src/chat.lua`](src/chat.lua)). The `handleChatEvent` function processes chat messages, and the `msgFuncs` table provides functions for sending messages to players.
+- **Automatic Payouts**:
+  The system automatically attempts to payout winnings directly to the player's inventory after each spin. It checks the player's balance and transfers the winnings as emeralds.
 
 - **Configuration**:
   Customizable behavior and appearance via TOML configuration files (see [`config.toml`](config.toml) and [`tools/config.lua`](tools/config.lua)). The `config.lua` script provides functions for configuring the game's settings, including peripheral devices, reward multipliers, and server parameters.
@@ -31,36 +31,41 @@ The ToasterGen Spin system consists of three main components:
 
 1. **Client**: The roulette table itself with monitors for the betting carpet and roulette wheel
 2. **Server**: Manages player data, processes bets, and handles payouts
-3. **Player Interaction**: Through chat commands, physical buttons, and monitor touches
+3. **Player Interaction**: Through physical buttons and monitor touches
 
-### Communication Flow Diagrams
+### Player Registration Process
+
+Players register for betting through a physical interaction process:
+
+1. Connect their inventory to an Inventory Manager (IV)
+2. Press a redstone button located on top of the machine
+3. The client detects which button was pressed by reading the redstone signal strength
+4. This assigns the player as the current active better, allowing them to place bets
+
+This physical registration process ensures that only players physically present at the machine can place bets and prevents remote exploitation.
+
+### Communication Flow
 
 #### Overall System Architecture
 
 ```mermaid
 graph TB
     Player[Player] -->|Places Bets| Client
-    Player -->|Chat Commands| Client
+    Player -->|Physical Interactions| Client
     Client -->|Monitor Display| Player
-    Client -->|Chat Messages| Player
     Client -->|Modem Messages| Server
     Server -->|Modem Responses| Client
     Server -->|Database Operations| DB[(Database)]
-    Server -->|Player Detection| PlayerDetector[Player Detector]
 
-    subgraph Client Components
+    subgraph Client
         Carpet[Carpet Monitor]
         Ring[Ring Monitor]
-        Inventory[Inventory Manager]
-        ChatBox[Chat Box]
-        ClientModem[Modem]
+        Mod[Modem]
     end
 
-    subgraph Server Components
-        ServerModem[Modem]
-        DBManager[Database Manager]
-        PlayerTracker[Player Tracker]
-        ServerChat[Chat Manager]
+    subgraph Server
+        SModem[Modem]
+        DBMgr[Database Manager]
     end
 ```
 
@@ -69,65 +74,48 @@ graph TB
 ```mermaid
 sequenceDiagram
     participant Player
-    participant Chat
     participant Client
     participant Server
     participant Database
 
-    Player->>Chat: $register (registers for betting)
-    Chat->>Client: Signals player registration
-    Client-->>Player: Confirms registration
-
-    Player->>Client: Places physical emerald in inventory
-    Client-->>Player: Confirms emerald received
-
-    Player->>Client: Touches betting carpet
-    Client->>Client: Places bet on selected number/option
-    Client-->>Player: Displays bet on carpet
-
-    Player->>Client: Touches ring to spin
-    Client->>Client: Animates ball and determines winning number
+    Player->>Client: Press button (register)
+    Client->>Player: Confirm registration
+    Player->>Client: Place emerald
+    Client->>Player: Emerald accepted
+    Player->>Client: Touch carpet (bet)
+    Client->>Client: Registers bet
+    Client->>Player: Displays bet
+    Player->>Client: Touch ring (spin)
+    Client->>Client: Animates ball, calculates winner
 
     alt Winning Bet
         Client->>Server: sendWin(player, bet, payout)
-        Server->>Database: Updates player balance
-        Server-->>Client: Confirms win recorded
-        Client->>Client: Adds emeralds to player inventory
-        Client-->>Player: Displays win animation and payout
+        Server->>Database: updateBalance
+        Server->>Client: confirmWin
+        Client->>Player: payout
     else Losing Bet
-        Client->>Client: Removes bet from display
-        Client-->>Player: Shows losing result
+        Client->>Player: no payout
     end
-
-    Player->>Chat: $redeem (requests payout)
-    Chat->>Client: Signals redemption request
-    Client->>Server: getBallance(player)
-    Server->>Database: Retrieves player balance
-    Server-->>Client: Returns balance information
-    Client->>Client: Processes payout to player
-    Client-->>Player: Provides emeralds to player
-    Client->>Server: resetBallance(player)
-    Server->>Database: Resets player balance to zero
-    Server-->>Client: Confirms balance reset
 ```
 
 #### Player Detection Flow
 
 ```mermaid
 flowchart LR
-    A[Player Approaches Table] --> B{In Detection Zone?}
-    B -->|No| C[Player Cannot Interact]
-    B -->|Yes| D{Player Registered?}
-    D -->|No| E[Player Uses $register Command]
-    D -->|Yes| F[Player Can Place Bets]
-    E --> F
-    F --> G[Player Places Bet on Carpet]
-    G --> H[Wheel Spins]
-    H --> I{Winning Bet?}
-    I -->|Yes| J[Calculate Payout]
-    I -->|No| L[End Game Session]
-    J --> K[Update Player Balance]
-    K --> L
+    A[Player Approaches Table] --> B{In Range?}
+    B -- No --> C[Cannot Bet]
+    B -- Yes --> D{Pressed Button?}
+    D -- No --> E[Tell Player to Press Button]
+    D -- Yes --> F[Identify Player]
+    F --> G{Has Emeralds?}
+    G -- No --> H[Prompt to add Emeralds]
+    G -- Yes --> I[Allowed to Bet]
+    I --> J[Spin Wheel]
+    J --> K{Win or Lose?}
+    K -- Win --> L[Calculate Payout]
+    K -- Lose --> M[End Round]
+    L --> N[Update Player Balance]
+    N --> M
 ```
 
 ## Event Handling
@@ -137,48 +125,57 @@ The game uses ComputerCraft's event system to handle user input and peripheral e
 - **Redstone Events**: Triggered when a player presses a button to register for betting.
 - **Monitor Touch Events**: Triggered when a player touches the betting carpet or the roulette wheel.
 
-### Event Flow Diagram
+### Event Flow
 
 ```mermaid
 stateDiagram-v2
-    [*] --> Idle: System Start
+    [*] --> Idle
     Idle --> PlayerRegistration: Redstone Event
-    PlayerRegistration --> BettingPhase: Player Registered
-    BettingPhase --> SpinningPhase: Touch Ring Monitor
+    PlayerRegistration --> BettingPhase
+    BettingPhase --> SpinningPhase: Ring Touch
     SpinningPhase --> ResultCalculation: Ball Stops
-    ResultCalculation --> PayoutPhase: Calculate Winnings
-    PayoutPhase --> Idle: Complete Transaction
-
-    BettingPhase --> BettingPhase: Touch Carpet Monitor (Add Bet)
+    ResultCalculation --> PayoutPhase
+    PayoutPhase --> Idle: Round Complete
 ```
 
 ## Technical Implementation
 
+### Redstone Signal Detection
+
+The system identifies which player is interacting with the machine through redstone signal strength:
+
+1. Each inventory manager is mapped to a specific signal strength
+2. When a player presses the button, it produces a specific signal strength
+3. The client reads this signal via `redstone.getAnalogInput(config.devices.redstone)`
+4. The `currentBetter` variable is set to the corresponding player index
+5. Formula: `id = redStreingth - config.devices.ivmanBigger` (base signal strength subtracted from signal)
+
+This approach allows multiple IV managers to be connected to the same system but still uniquely identify each player.
+
 ### Modem Communication Protocol
 
-The client and server communicate using the ComputerCraft modem peripheral on channel 1. Messages follow this format:
+The client and server communicate using the ComputerCraft modem peripheral on channel 1.
 
-```mermaid
-classDiagram
-    class Message {
-        type: string
-        player?: string
-        bet?: Bet
-        payout?: number
-        startPos?: Position
-        endPos?: Position
-    }
+**Message Format:**
 
-    class Response {
-        type: string
-        code: number
-        message: string
-        balance?: number
-        players?: string[]
-        numberOfPlayers?: number
-    }
+```txt
+Message {
+  type: string        // Request type (e.g., "win", "balance", "resetBalance")
+  player?: string     // Player name
+  bet?: Bet           // Bet information
+  payout?: number     // Payout amount
+  startPos?: Position // For player detection
+  endPos?: Position   // For player detection
+}
 
-    Message --> Response: Triggers
+Response {
+  type: string        // Response type (e.g., "winRes", "balanceRes")
+  code: number        // HTTP-like status code
+  message: string     // Status message
+  balance?: number    // For balance responses
+  players?: string[]  // For player detection responses
+  numberOfPlayers?: number // Count of players detected
+}
 ```
 
 ## Usage

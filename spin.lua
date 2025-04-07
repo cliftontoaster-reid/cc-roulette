@@ -63,8 +63,9 @@ local function defaultConfig()
         devices = {
             carpet = "monitor_0",
             ring = "monitor_1",
-            chatBox = "chatBox",
-            playerDetector = "playerDetector"
+            redstone = "back",
+            ivmanagers = { "playerDetector_1" },
+            ivmanBigger = 1
         }
     }
 
@@ -214,29 +215,23 @@ local function mainLoop()
 
             if payout then
                 Logger.info("Payout for bet: " .. payout)
-                if mod.sendWin(b.player, b, payout) == 200 then
-                    Logger.info("Payout sent to server")
-                    local idx = iv.findPlayer(b.player)
-                    if idx == nil then
-                        Logger.error("Player not found")
-                        return
-                    end
-
-                    local res = iv.addMoneyToPlayer(idx, payout)
-                    if res == nil then
-                        Logger.error("Error adding money to player " .. b.player)
-                        return
-                    end
-
-                    Logger.info("Money added to player " .. b.player)
-                    carpet.removeBet(b)
-                    Logger.info("Bet removed for player " .. b.player)
-                    mod.resetBallance(b.player)
+                local idx = iv.findPlayer(b.player)
+                if idx == nil then
+                    Logger.error("Player not found")
                     return
-                else
-                    Logger.error("Error sending payout to server")
-                    emergencyWrite(nbr, bets)
                 end
+
+                local res = iv.addMoneyToPlayer(idx, payout)
+                if res == nil then
+                    Logger.error("Error adding money to player " .. b.player)
+                    return
+                end
+
+                Logger.info("Money added to player " .. b.player)
+                carpet.removeBet(b)
+                Logger.info("Bet removed for player " .. b.player)
+                mod.resetBallance(b.player)
+                Logger.info("Payout sent to server")
             else
                 Logger.info("No payout for bet")
             end

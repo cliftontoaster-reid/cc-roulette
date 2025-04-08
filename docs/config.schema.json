@@ -53,13 +53,20 @@
                     "type": "string",
                     "description": "The device that is used as ring"
                 },
-                "chatBox": {
+                "redstone": {
                     "type": "string",
-                    "description": "The device that is used as chat box"
+                    "description": "The device that is used as redstone"
                 },
-                "playerDetector": {
-                    "type": "string",
-                    "description": "The device that is used as player detector"
+                "ivmanagers": {
+                    "type": "array",
+                    "description": "The devices that are used as inventory managers",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "ivmanBigger": {
+                    "type": "number",
+                    "description": "The strength of the signal for the lowest inventory manager"
                 },
                 "modem": {
                     "type": "string",
@@ -69,14 +76,16 @@
             "required": [
                 "carpet",
                 "ring",
-                "chatBox",
-                "playerDetector",
+                "redstone",
+                "ivmanagers",
+                "ivmanBigger",
                 "modem"
             ]
         }
     },
     "required": [
         "version",
-        "rewards"
+        "rewards",
+        "devices"
     ]
 }

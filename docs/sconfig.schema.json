@@ -1,0 +1,40 @@
+{
+    "$id": "https://github.com/cliftontoaster-reid/cc-roulette/blob/main/docs/sconfig.schema.json",
+    "title": "ToasterSpin Server Config Schema",
+    "description": "Schema for the ToasterSpin server config file",
+    "type": "object",
+    "properties": {
+        "version": {
+            "type": "string",
+            "description": "The version of the config file schema using Semantic Versioning",
+            "pattern": "^\\d+\\.\\d+\\.\\d+$"
+        },
+        "devices": {
+            "type": "object",
+            "description": "The devices that are used in the server",
+            "properties": {
+                "modem": {
+                    "type": "string",
+                    "description": "The device that is used as modem"
+                },
+                "chatBox": {
+                    "type": "string",
+                    "description": "The device that is used as chat box"
+                },
+                "playerDetector": {
+                    "type": "string",
+                    "description": "The device that is used as player detector"
+                }
+            },
+            "required": [
+                "modem",
+                "chatBox",
+                "playerDetector"
+            ]
+        }
+    },
+    "required": [
+        "version",
+        "devices"
+    ]
+}

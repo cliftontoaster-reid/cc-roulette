@@ -32,6 +32,7 @@ The ToasterGen Spin system consists of three main components:
 1. **Client**: The roulette table itself with monitors for the betting carpet and roulette wheel
 2. **Server**: Manages player data, processes bets, and handles payouts
 3. **Player Interaction**: Through physical buttons and monitor touches
+4. **Inventory Manager**: A physical device that connects to the player's inventory and sends/receives payments directly to/from a client.
 
 ### Player Registration Process
 
@@ -53,9 +54,13 @@ graph TB
     Player[Player] -->|Places Bets| Client
     Player -->|Physical Interactions| Client
     Client -->|Monitor Display| Player
-    Client -->|Modem Messages| Server
-    Server -->|Modem Responses| Client
     Server -->|Database Operations| DB[(Database)]
+    Player -->|Selects self| IVManager
+    Player -->|Assigns self's inventory| IVManager
+    IVManager -->|Changes current better| Client
+    IVManager -->|Redstone signal for player ID| Client
+    Client -->|Updates Player| IVManager
+    Client -->|Check player's offhand| Server
 
     subgraph Client
         Carpet[Carpet Monitor]
@@ -67,6 +72,12 @@ graph TB
         SModem[Modem]
         DBMgr[Database Manager]
     end
+
+    subgraph IVManager
+        IV[Inventory Manager]
+        IVButton[Button]
+        IModem[Modem]
+    end
 ```
 
 #### Betting and Payout Sequence
@@ -76,25 +87,33 @@ sequenceDiagram
     participant Player
     participant Client
     participant Server
+    participant IVManager
     participant Database
 
     Player->>Client: Press button (register)
     Client->>Player: Confirm registration
     Player->>Client: Place emerald
-    Client->>Player: Emerald accepted
-    Player->>Client: Touch carpet (bet)
-    Client->>Client: Registers bet
-    Client->>Player: Displays bet
-    Player->>Client: Touch ring (spin)
-    Client->>Client: Animates ball, calculates winner
+    Client->>IVManager: Check for emeralds in offhand
+    IVManager->>Client: Number of emeralds in offhand
+    alt Enough Emeralds
+        Player->>Client: Touch carpet (bet)
+        Client->>IVManager: Take one emerald
+        IVManager->>Client: Removed one emerald
+        Client->>Client: Registers bet
+        Client->>Player: Displays bet
+        Player->>Client: Touch ring (spin)
+        Client->>Client: Animates ball, calculates winner
 
-    alt Winning Bet
-        Client->>Server: sendWin(player, bet, payout)
-        Server->>Database: updateBalance
-        Server->>Client: confirmWin
-        Client->>Player: payout
-    else Losing Bet
-        Client->>Player: no payout
+        alt Winning Bet
+            Client->>Server: sendWin(player, bet, payout)
+            Server->>Database: updateBalance
+            Server->>Client: confirmWin
+            Client->>Player: payout
+        else Losing Bet
+            Client->>Player: no payout
+        end
+    else Not Enough Emeralds
+        Client ->> Player: Not enough emeralds, ignore
     end
 ```
 

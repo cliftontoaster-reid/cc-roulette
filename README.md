@@ -20,7 +20,7 @@ ToasterGen Spin is a commissioned roulette game for an in-game ComputerCraft cas
   The system automatically attempts to payout winnings directly to the player's inventory after each spin. It checks the player's balance and transfers the winnings as emeralds.
 
 - **Configuration**:
-  Customizable behavior and appearance via TOML configuration files (see [`config.toml`](config.toml) and [`tools/config.lua`](tools/config.lua)). The `config.lua` script provides functions for configuring the game's settings, including peripheral devices, reward multipliers, and server parameters.
+  Customizable behaviour and appearance via TOML configuration files (see [`config.toml`](config.toml) and [`tools/config.lua`](tools/config.lua)). The `config.lua` script provides functions for configuring the game's settings, including peripheral devices, reward multipliers, and server parameters.
 
 - **Modular Design**:
   Organized into multiple modules such as [`spin.lua`](spin.lua) for the main game logic, [`carpet.lua`](src/carpet.lua) for the betting carpet, [`ring.lua`](src/ring.lua) for the roulette wheel, and [`chat.lua`](src/chat.lua) for chat integration.

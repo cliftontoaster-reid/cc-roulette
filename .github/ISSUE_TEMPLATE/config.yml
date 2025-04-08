@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Developer
+    url: https://discord.com/users/571975224803721226
+    about: Join discord to contact the developer
+  - name: Code owner
+    url: https://discord.com/users/969757574121529454
+    about: Join discord to contact the code owner

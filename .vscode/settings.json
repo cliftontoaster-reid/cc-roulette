@@ -49,5 +49,8 @@
             ],
             "url": "https://json-schema.org/draft/2020-12/schema"
         }
-    ]
+    ],
+    "yaml.schemas": {
+        "https://json.schemastore.org/github-issue-config.json": "file:///home/creid/Documents/Lua/ToastCo/clients/Spino/roulette/.github/ISSUE_TEMPLATE/config.yml"
+    }
 }

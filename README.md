@@ -209,6 +209,12 @@ Response {
 - Customize behaviour and appearance via the configuration file.
 - Explore and test individual components in the [`tests`](tests/) directory.
 
+**When reporting issues, please include the following environment details:**
+
+- Minecraft Version
+- Loader (Forge/Fabric)
+- CC Tweaked Version
+
 ## Licence
 
 Distributed under the GNU Lesser General Public Licence. See [LICENCE](LICENCE) for details.

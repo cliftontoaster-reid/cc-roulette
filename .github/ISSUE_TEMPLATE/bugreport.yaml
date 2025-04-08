@@ -1,0 +1,105 @@
+name: Bug Report
+description: Report a bug or unexpected behavior
+title: "[Bug] "
+labels:
+  - bug
+assignees:
+  - cliftontoaster-reid
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for taking the time to report this bug! We appreciate your help in improving our product.
+
+        Please confirm that to your knowledge, this bug has not already been reported by someone else. If it has, please add your information to that issue instead of creating a new one.
+  - type: checkboxes
+    id: checkboxes
+    attributes:
+      label: Please confirm the following
+      description: Please check all that apply
+      options:
+        - label: I have searched for similar bug reports
+          required: true
+        - label: I have checked the existing issues
+          required: true
+        - label: I have checked the closed issues
+          required: true
+        - label: I have tried to reproduce the bug more than once
+          required: true
+  - type: dropdown
+    id: type
+    attributes:
+      label: Bug Type
+      description: What type of bug is this?
+      options:
+        - Game Breaking
+        - Visual/UI Issue
+        - Performance Issue
+        - Gameplay Mechanics
+        - Network/Connectivity
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: Please provide a clear and concise description of the bug.
+      placeholder: When I try to place a bet, the game crashes...
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce
+      description: Please provide detailed steps to reproduce the behavior.
+      placeholder: |
+        1. Go to '...'
+        2. Click on '....'
+        3. Scroll down to '....'
+        4. See error
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What did you expect to happen?
+      placeholder: I expected the bet to be placed successfully
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behavior
+      description: What actually happened?
+      placeholder: The game freezes and displays an error message
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Please provide information about your environment
+      placeholder: |
+        - Minecraft Version: [e.g. 1.21.1]
+        - Loader: [e.g. Forge, Fabric]
+        - CC Tweaked Version: [e.g. 1.115.1]
+    validations:
+      required: false
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Information
+      description: Add any other context, screenshots, or error logs about the problem here.
+      placeholder: You can drag and drop images or files here
+    validations:
+      required: false
+  - type: textarea
+    id: workaround
+    attributes:
+      label: Possible Workaround
+      description: If you've found a way to work around this issue, please describe it here.
+      placeholder: I was able to avoid this bug by...
+    validations:
+      required: false

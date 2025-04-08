@@ -1,0 +1,77 @@
+name: Suggestions
+description: Suggest a new feature or improvement
+title: "[Suggestion] "
+labels:
+  - suggestion
+assignees:
+  - cliftontoaster-reid
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for your suggestion! We appreciate your input and will review it as soon as possible.
+
+        Please confirm that to your knowledge, this suggestion has not already been made by someone else. If it has, please add your support to that issue instead of creating a new one.
+  - type: checkboxes
+    id: checkboxes
+    attributes:
+      label: Please confirm the following
+      description: Please check all that apply
+      options:
+        - label: I have searched for similar suggestions
+          required: true
+        - label: I have checked the existing issues
+          required: true
+        - label: I have checked the closed issues
+          required: true
+        - label: I have checked the pull requests
+          required: true
+  - type: dropdown
+    id: type
+    attributes:
+      label: Suggestion Type
+      description: What type of suggestion is this?
+      options:
+        - UI/UX Improvement
+        - New Feature
+        - Performance Enhancement
+        - Documentation
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem Statement
+      description: What problem does your suggestion aim to solve?
+      placeholder: Currently, users have difficulty with...
+    validations:
+      required: true
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: Detailed Suggestion
+      description: Please provide a detailed description of your suggestion.
+      placeholder: |
+        I suggest implementing a feature that allows players to [specific action]. 
+        This would work by [implementation details] and would benefit users by [specific benefits].
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: Have you considered any alternative solutions?
+      placeholder: Other approaches could include...
+    validations:
+      required: false
+  - type: dropdown
+    id: contribution
+    attributes:
+      label: Contribution
+      description: Would you be willing to help implement this suggestion?
+      options:
+        - Yes, I'd like to contribute
+        - No, I'm just suggesting
+    validations:
+      required: false

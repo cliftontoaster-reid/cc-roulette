@@ -91,14 +91,14 @@ sequenceDiagram
     participant Database
 
     Player->>Client: Press button (register)
-    Client->>Player: Confirm registration
+    Client-->>Player: Confirm registration
     Player->>Client: Place emerald
     Client->>IVManager: Check for emeralds in offhand
-    IVManager->>Client: Number of emeralds in offhand
+    IVManager-->>Client: Number of emeralds in offhand
     alt Enough Emeralds
         Player->>Client: Touch carpet (bet)
         Client->>IVManager: Take one emerald
-        IVManager->>Client: Removed one emerald
+        IVManager-->>Client: Removed one emerald
         Client->>Client: Registers bet
         Client->>Player: Displays bet
         Player->>Client: Touch ring (spin)
@@ -107,8 +107,14 @@ sequenceDiagram
         alt Winning Bet
             Client->>Server: sendWin(player, bet, payout)
             Server->>Database: updateBalance
-            Server->>Client: confirmWin
-            Client->>Player: payout
+            Server-->>Client: confirmWin
+                Client->>IVManager: Transfer payout
+            alt Payout Successful
+                Client->>Server: resetBalance(player)
+                Server-->>Client: confirmReset
+            else Payout Failed
+                Client-->>Player: not enough emeralds, contact admin
+            end
         else Losing Bet
             Client->>Player: no payout
         end

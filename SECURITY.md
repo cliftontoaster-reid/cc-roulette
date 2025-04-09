@@ -11,8 +11,8 @@ Security vulnerabilities should be reported directly to the project team through
   - Discord: [Discord User](https://discord.com/users/571975224803721226)
   - Email: <cliftontreid@duck.com>
 
-- **Code Owner**:
-  - Discord: [Discord User](https://discord.com/users/969757574121529454)
+- **Discord Server**:
+  - [Discord](https://discord.gg/jpMhrHjWFu)
 
 ## Disclosure Policy
 

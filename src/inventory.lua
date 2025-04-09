@@ -36,6 +36,7 @@ local inv = {}
 local function getMoneyInPlayer(idx)
 	local player = invManagers[idx]
 	if not player then
+		Logger.debug("Player %d not found", idx)
 		return nil
 	end
 
@@ -43,10 +44,11 @@ local function getMoneyInPlayer(idx)
 		return player:getItemInOffHand()
 	end)
 	if not success or not item then
+		Logger.debug("No item in off-hand for player %d", idx)
 		return nil
 	end
 	if item.name ~= money then
-		Logger.debug("Item in off-hand is not money: " .. item.name)
+		Logger.debug("Item in off-hand is not money: %s", item.name)
 		return nil
 	end
 	return item.count

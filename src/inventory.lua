@@ -79,6 +79,10 @@ local function takeMoneyFromPlayer(idx, amount)
 	if not success then
 		return nil
 	end
+	if result ~= amount then
+		Logger.debug("Failed to take %d money from player %d, took %d", amount, idx, result)
+		return nil
+	end
 	return amount
 end
 

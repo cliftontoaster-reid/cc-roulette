@@ -240,15 +240,15 @@ local function mainLoop()
                 end
 
                 Logger.info("Money added to player " .. b.player)
-                carpet.removeBet(b)
                 Logger.info("Bet removed for player " .. b.player)
                 mod.resetBallance(b.player)
                 Logger.info("Payout sent to server")
             else
                 Logger.info("No payout for bet")
-                carpet.removeBet(b)
             end
         end
+        carpet.resetBets()
+        Logger.info("Bets reset successfully")
     end
 
     -- Handle monitor touch events

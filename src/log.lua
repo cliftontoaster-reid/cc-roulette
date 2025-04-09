@@ -43,31 +43,46 @@ end
 --- Log a message to the console as DEBUG
 --- @param ... any, arguments for message formatting.
 function Logger.debug(...)
-	Logger.log("DEBUG  ", string.format(...))
+	local msg = string.format(...)
+	if msg then
+		Logger.log("DEBUG  ", msg)
+	end
 end
 
 --- Log a message to the console as INFO
 --- @param ... any, arguments for message formatting.
 function Logger.info(...)
-	Logger.log("INFO   ", string.format(...))
+	local msg = string.format(...)
+	if msg then
+		Logger.log("INFO   ", msg)
+	end
 end
 
 --- Log a message to the console as WARNING
 --- @param ... any, arguments for message formatting.
 function Logger.warning(...)
-	Logger.log("WARNING", string.format(...))
+	local msg = string.format(...)
+	if msg then
+		Logger.log("WARNING", msg)
+	end
 end
 
 --- Log a message to the console as ERROR
 --- @param ... any, arguments for message formatting.
 function Logger.error(...)
-	Logger.log("ERROR  ", string.format(...))
+	local msg = string.format(...)
+	if msg then
+		Logger.log("ERROR  ", msg)
+	end
 end
 
 --- Log a message to the console as SUCCESS
 --- @param ... any, arguments for message formatting.
 function Logger.success(...)
-	Logger.log("SUCCESS", string.format(...))
+	local msg = string.format(...)
+	if msg then
+		Logger.log("SUCCESS", msg)
+	end
 end
 
 return Logger

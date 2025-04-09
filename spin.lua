@@ -246,6 +246,7 @@ local function mainLoop()
                 Logger.info("Payout sent to server")
             else
                 Logger.info("No payout for bet")
+                carpet.removeBet(b)
             end
         end
     end

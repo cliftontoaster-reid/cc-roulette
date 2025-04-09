@@ -31,26 +31,26 @@ modem.open(1)
 ---@param payout number The payout amount
 ---@return number The response code from the server
 local function sendWin(player, bet, payout)
-    ---@type WinMessage
-    local message = {
-        type = "win",
-        player = player,
-        bet = bet,
-        payout = payout
-    }
+	---@type WinMessage
+	local message = {
+		type = "win",
+		player = player,
+		bet = bet,
+		payout = payout,
+	}
 
-    modem.transmit(1, 1, message)
+	modem.transmit(1, 1, message)
 
-    -- await the response
-    local event, side, channel, reply, distance
-    repeat
-        event, side, channel, reply, distance = os.pullEvent("modem_message")
-    until channel == 1 and reply.type == "winRes"
+	-- await the response
+	local event, side, channel, reply, distance
+	repeat
+		event, side, channel, reply, distance = os.pullEvent("modem_message")
+	until channel == 1 and reply.type == "winRes"
 
-    if reply.code ~= 200 then
-        print("Error: " .. reply.message)
-    end
-    return reply.code
+	if reply.code ~= 200 then
+		print("Error: " .. reply.message)
+	end
+	return reply.code
 end
 
 --- Retrieves the balance for a player from the server
@@ -58,20 +58,20 @@ end
 ---@return number|nil balance The player's balance, or nil if not found
 ---@return number code The response code from the server
 local function getBallance(player)
-    local message = {
-        type = "balance",
-        player = player
-    }
+	local message = {
+		type = "balance",
+		player = player,
+	}
 
-    modem.transmit(1, 1, message)
+	modem.transmit(1, 1, message)
 
-    -- await the response
-    local event, side, channel, reply, distance
-    repeat
-        event, side, channel, reply, distance = os.pullEvent("modem_message")
-    until channel == 1 and reply.type == "balanceRes"
+	-- await the response
+	local event, side, channel, reply, distance
+	repeat
+		event, side, channel, reply, distance = os.pullEvent("modem_message")
+	until channel == 1 and reply.type == "balanceRes"
 
-    return reply.balance, reply.code
+	return reply.balance, reply.code
 end
 
 --- Resets the balance for a player to zero
@@ -79,20 +79,20 @@ end
 ---@return number code The response code from the server
 ---@return string message The response message from the server
 local function resetBallance(player)
-    local message = {
-        type = "resetBalance",
-        player = player
-    }
+	local message = {
+		type = "resetBalance",
+		player = player,
+	}
 
-    modem.transmit(1, 1, message)
+	modem.transmit(1, 1, message)
 
-    -- await the response
-    local event, side, channel, reply, distance
-    repeat
-        event, side, channel, reply, distance = os.pullEvent("modem_message")
-    until channel == 1 and reply.type == "resetBalanceRes"
+	-- await the response
+	local event, side, channel, reply, distance
+	repeat
+		event, side, channel, reply, distance = os.pullEvent("modem_message")
+	until channel == 1 and reply.type == "resetBalanceRes"
 
-    return reply.code, reply.message
+	return reply.code, reply.message
 end
 
 --- Gets a list of players within a specified rectangular area
@@ -101,30 +101,30 @@ end
 ---@return table players List of player names in the area
 ---@return number count Number of players in the area
 local function getPlayersInSquare(startPos, endPos)
-    local message = {
-        type = "playersInSquare",
-        startPos = startPos,
-        endPos = endPos
-    }
+	local message = {
+		type = "playersInSquare",
+		startPos = startPos,
+		endPos = endPos,
+	}
 
-    modem.transmit(1, 1, message)
+	modem.transmit(1, 1, message)
 
-    -- await the response
-    local event, side, channel, reply, distance
-    repeat
-        event, side, channel, reply, distance = os.pullEvent("modem_message")
-    until channel == 1 and reply.type == "playersInSquareRes"
+	-- await the response
+	local event, side, channel, reply, distance
+	repeat
+		event, side, channel, reply, distance = os.pullEvent("modem_message")
+	until channel == 1 and reply.type == "playersInSquareRes"
 
-    return reply.players, reply.numberOfPlayers
+	return reply.players, reply.numberOfPlayers
 end
 
 return {
-    isReady = function()
-        return ready
-    end,
+	isReady = function()
+		return ready
+	end,
 
-    sendWin = sendWin,
-    getBallance = getBallance,
-    resetBallance = resetBallance,
-    getPlayersInSquare = getPlayersInSquare,
+	sendWin = sendWin,
+	getBallance = getBallance,
+	resetBallance = resetBallance,
+	getPlayersInSquare = getPlayersInSquare,
 }

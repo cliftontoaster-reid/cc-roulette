@@ -23,11 +23,11 @@ local Database = {}
 ---@param directory? string Custom root directory path (default: "/.db/")
 ---@return string Path to initialized directory
 function Database.init(directory)
-    directory = directory or "/.db/"
-    if not fs.exists(directory) then
-        fs.makeDir(directory)
-    end
-    return directory
+	directory = directory or "/.db/"
+	if not fs.exists(directory) then
+		fs.makeDir(directory)
+	end
+	return directory
 end
 
 --- Creates a new database entry in the specified collection.
@@ -37,29 +37,29 @@ end
 ---@return boolean success Operation status
 ---@return string? error_message Description of failure
 function Database.create(collection, id, data)
-    local directory = Database.init() .. collection .. "/"
-    if not fs.exists(directory) then
-        fs.makeDir(directory)
-    end
+	local directory = Database.init() .. collection .. "/"
+	if not fs.exists(directory) then
+		fs.makeDir(directory)
+	end
 
-    local path = directory .. id .. ".json"
-    local file = fs.open(path, "w")
-    if not file then
-        return false, "Failed to open file for writing"
-    end
+	local path = directory .. id .. ".json"
+	local file = fs.open(path, "w")
+	if not file then
+		return false, "Failed to open file for writing"
+	end
 
-    -- Create Entry with metadata
-    local currentTime = os.time()
-    local entry = {
-        id = tonumber(id),
-        data = data,
-        createdAt = currentTime,
-        updatedAt = currentTime
-    }
+	-- Create Entry with metadata
+	local currentTime = os.time()
+	local entry = {
+		id = tonumber(id),
+		data = data,
+		createdAt = currentTime,
+		updatedAt = currentTime,
+	}
 
-    file.write(textutils.serializeJSON(entry))
-    file.close()
-    return true
+	file.write(textutils.serializeJSON(entry))
+	file.close()
+	return true
 end
 
 --- Retrieves an entry from the specified collection.
@@ -68,26 +68,26 @@ end
 ---@return Entry? entry Deserialized entry object if found
 ---@return string? error_message Description of failure
 function Database.read(collection, id)
-    local directory = Database.init() .. collection .. "/"
-    if not fs.exists(directory) then
-        return nil, "Collection does not exist"
-    end
+	local directory = Database.init() .. collection .. "/"
+	if not fs.exists(directory) then
+		return nil, "Collection does not exist"
+	end
 
-    local path = directory .. id .. ".json"
-    if not fs.exists(path) then
-        return nil, "Record does not exist"
-    end
+	local path = directory .. id .. ".json"
+	if not fs.exists(path) then
+		return nil, "Record does not exist"
+	end
 
-    local file = fs.open(path, "r")
-    if not file then
-        return nil, "Failed to open file for reading"
-    end
+	local file = fs.open(path, "r")
+	if not file then
+		return nil, "Failed to open file for reading"
+	end
 
-    local content = file.readAll()
-    file.close()
+	local content = file.readAll()
+	file.close()
 
-    -- Return the complete Entry object
-    return textutils.unserializeJSON(content)
+	-- Return the complete Entry object
+	return textutils.unserializeJSON(content)
 end
 
 --- Updates an existing entry's data while preserving metadata.
@@ -97,40 +97,40 @@ end
 ---@return boolean success Operation status
 ---@return string? error_message Description of failure
 function Database.update(collection, id, data)
-    local directory = Database.init() .. collection .. "/"
-    if not fs.exists(directory) then
-        return false, "Collection does not exist"
-    end
+	local directory = Database.init() .. collection .. "/"
+	if not fs.exists(directory) then
+		return false, "Collection does not exist"
+	end
 
-    local path = directory .. id .. ".json"
-    if not fs.exists(path) then
-        return false, "Record does not exist"
-    end
+	local path = directory .. id .. ".json"
+	if not fs.exists(path) then
+		return false, "Record does not exist"
+	end
 
-    -- Read existing entry
-    local file = fs.open(path, "r")
-    if not file then
-        return false, "Failed to open file for reading"
-    end
+	-- Read existing entry
+	local file = fs.open(path, "r")
+	if not file then
+		return false, "Failed to open file for reading"
+	end
 
-    local content = file.readAll()
-    file.close()
+	local content = file.readAll()
+	file.close()
 
-    local entry = textutils.unserializeJSON(content)
+	local entry = textutils.unserializeJSON(content)
 
-    -- Update entry
-    entry.data = data
-    entry.updatedAt = os.time()
+	-- Update entry
+	entry.data = data
+	entry.updatedAt = os.time()
 
-    -- Write updated entry
-    file = fs.open(path, "w")
-    if not file then
-        return false, "Failed to open file for writing"
-    end
+	-- Write updated entry
+	file = fs.open(path, "w")
+	if not file then
+		return false, "Failed to open file for writing"
+	end
 
-    file.write(textutils.serializeJSON(entry))
-    file.close()
-    return true
+	file.write(textutils.serializeJSON(entry))
+	file.close()
+	return true
 end
 
 --- Permanently deletes an entry from the database.
@@ -139,39 +139,39 @@ end
 ---@return boolean success Operation status (true even if file didn't exist)
 ---@return string? error_message Description of failure
 function Database.delete(collection, id)
-    local directory = Database.init() .. collection .. "/"
-    if not fs.exists(directory) then
-        return false, "Collection does not exist"
-    end
+	local directory = Database.init() .. collection .. "/"
+	if not fs.exists(directory) then
+		return false, "Collection does not exist"
+	end
 
-    local path = directory .. id .. ".json"
-    if not fs.exists(path) then
-        return false, "Record does not exist"
-    end
+	local path = directory .. id .. ".json"
+	if not fs.exists(path) then
+		return false, "Record does not exist"
+	end
 
-    return fs.delete(path)
+	return fs.delete(path)
 end
 
 --- Lists all record IDs in a collection.
 ---@param collection string Name of the collection (subdirectory)
 ---@return string[] Array of record IDs as strings
 function Database.list(collection)
-    local directory = Database.init() .. collection .. "/"
-    if not fs.exists(directory) then
-        return {}
-    end
+	local directory = Database.init() .. collection .. "/"
+	if not fs.exists(directory) then
+		return {}
+	end
 
-    local files = fs.list(directory)
-    local records = {}
+	local files = fs.list(directory)
+	local records = {}
 
-    for _, file in ipairs(files) do
-        if string.match(file, "%.json$") then
-            local id = string.sub(file, 1, -6) -- Remove .json extension
-            table.insert(records, id)
-        end
-    end
+	for _, file in ipairs(files) do
+		if string.match(file, "%.json$") then
+			local id = string.sub(file, 1, -6) -- Remove .json extension
+			table.insert(records, id)
+		end
+	end
 
-    return records
+	return records
 end
 
 --- Checks if an entry exists in the specified collection.
@@ -179,13 +179,13 @@ end
 ---@param id number|string Numeric identifier of the record
 ---@return boolean exists True if the entry exists, false otherwise
 function Database.exists(collection, id)
-    local directory = Database.init() .. collection .. "/"
-    if not fs.exists(directory) then
-        return false
-    end
+	local directory = Database.init() .. collection .. "/"
+	if not fs.exists(directory) then
+		return false
+	end
 
-    local path = directory .. id .. ".json"
-    return fs.exists(path)
+	local path = directory .. id .. ".json"
+	return fs.exists(path)
 end
 
 --- Retrieves nested values from objects using dot-notation paths
@@ -193,14 +193,14 @@ end
 ---@param path string Dot-separated path (e.g., "user.profile.age")
 ---@return any|nil value Found value or nil if path invalid
 local function getNestedValue(obj, path)
-    local current = obj
-    for segment in string.gmatch(path, "[^%.]+") do
-        if type(current) ~= "table" or current[segment] == nil then
-            return nil
-        end
-        current = current[segment]
-    end
-    return current
+	local current = obj
+	for segment in string.gmatch(path, "[^%.]+") do
+		if type(current) ~= "table" or current[segment] == nil then
+			return nil
+		end
+		current = current[segment]
+	end
+	return current
 end
 
 --- Searches for entries matching query criteria in the collection.
@@ -210,40 +210,40 @@ end
 ---@return Entry[] results Array of matching Entry objects
 ---@return string? error_message Description of failure
 function Database.search(collection, query)
-    local directory = Database.init() .. collection .. "/"
-    if not fs.exists(directory) then
-        return {}, "Collection does not exist"
-    end
+	local directory = Database.init() .. collection .. "/"
+	if not fs.exists(directory) then
+		return {}, "Collection does not exist"
+	end
 
-    local files = fs.list(directory)
-    local results = {}
+	local files = fs.list(directory)
+	local results = {}
 
-    for _, file in ipairs(files) do
-        if string.match(file, "%.json$") then
-            local path = directory .. file
-            local fileHandle = fs.open(path, "r")
-            if fileHandle then
-                local content = fileHandle.readAll()
-                fileHandle.close()
+	for _, file in ipairs(files) do
+		if string.match(file, "%.json$") then
+			local path = directory .. file
+			local fileHandle = fs.open(path, "r")
+			if fileHandle then
+				local content = fileHandle.readAll()
+				fileHandle.close()
 
-                local entry = textutils.unserializeJSON(content)
-                local match = true
+				local entry = textutils.unserializeJSON(content)
+				local match = true
 
-                for key, value in pairs(query) do
-                    if getNestedValue(entry.data, key) ~= value then
-                        match = false
-                        break
-                    end
-                end
+				for key, value in pairs(query) do
+					if getNestedValue(entry.data, key) ~= value then
+						match = false
+						break
+					end
+				end
 
-                if match then
-                    table.insert(results, entry)
-                end
-            end
-        end
-    end
+				if match then
+					table.insert(results, entry)
+				end
+			end
+		end
+	end
 
-    return results
+	return results
 end
 
 --- Checks if any entries matching the query criteria exist in the specified collection.
@@ -252,11 +252,11 @@ end
 ---@return boolean exists True if at least one matching entry exists
 ---@return string? error_message Description of failure
 function Database.existsQuery(collection, query)
-    local results, err = Database.search(collection, query)
-    if err then
-        return false, err
-    end
-    return #results > 0
+	local results, err = Database.search(collection, query)
+	if err then
+		return false, err
+	end
+	return #results > 0
 end
 
 return Database

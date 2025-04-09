@@ -17,6 +17,7 @@ runtimes:
 # This is the section where you manage your linters. (https://docs.trunk.io/check/configuration)
 lint:
   enabled:
+    - stylua@2.0.2
     - checkov@3.2.399
     - git-diff-check
     - markdownlint@0.44.0
@@ -29,3 +30,6 @@ actions:
     - trunk-fmt-pre-commit
   enabled:
     - trunk-upgrade-available
+tools:
+  enabled:
+    - stylua@2.0.2

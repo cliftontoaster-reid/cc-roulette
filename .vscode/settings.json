@@ -1,56 +1,51 @@
 {
-    "Lua.runtime.version": "Lua 5.2",
-    "Lua.diagnostics.globals": [
-        "bit",
-        "colors",
-        "colours",
-        "commands",
-        "disk",
-        "fs",
-        "gps",
-        "help",
-        "http",
-        "keys",
-        "multishell",
-        "paintutils",
-        "parallel",
-        "peripheral",
-        "pocket",
-        "rednet",
-        "redstone",
-        "rs",
-        "settings",
-        "shell",
-        "term",
-        "textutils",
-        "turtle",
-        "vector",
-        "window",
-        "_CC_DEFAULT_SETTINGS",
-        "_HOST",
-        "printError",
-        "write",
-        "read",
-        "sleep"
-    ],
-    "Lua.runtime.builtin": {
-        "bit32": "enable",
-        "bit": "disable",
-        "utf8": "enable"
-    },
-    "Lua.diagnostics.disable": [
-        "undefined-field",
-        "deprecated"
-    ],
-    "json.schemas": [
-        {
-            "fileMatch": [
-                "*.schema.json"
-            ],
-            "url": "https://json-schema.org/draft/2020-12/schema"
-        }
-    ],
-    "yaml.schemas": {
-        "https://json.schemastore.org/github-issue-config.json": "file:///home/creid/Documents/Lua/ToastCo/clients/Spino/roulette/.github/ISSUE_TEMPLATE/config.yml"
+  "Lua.runtime.version": "Lua 5.2",
+  "Lua.diagnostics.globals": [
+    "bit",
+    "colors",
+    "colours",
+    "commands",
+    "disk",
+    "fs",
+    "gps",
+    "help",
+    "http",
+    "keys",
+    "multishell",
+    "paintutils",
+    "parallel",
+    "peripheral",
+    "pocket",
+    "rednet",
+    "redstone",
+    "rs",
+    "settings",
+    "shell",
+    "term",
+    "textutils",
+    "turtle",
+    "vector",
+    "window",
+    "_CC_DEFAULT_SETTINGS",
+    "_HOST",
+    "printError",
+    "write",
+    "read",
+    "sleep"
+  ],
+  "Lua.runtime.builtin": {
+    "bit32": "enable",
+    "bit": "disable",
+    "utf8": "enable"
+  },
+  "Lua.diagnostics.disable": ["undefined-field", "deprecated"],
+  "json.schemas": [
+    {
+      "fileMatch": ["*.schema.json"],
+      "url": "https://json-schema.org/draft/2020-12/schema"
     }
+  ],
+  "yaml.schemas": {
+    "https://json.schemastore.org/github-issue-config.json": "file:///home/creid/Documents/Lua/ToastCo/clients/Spino/roulette/.github/ISSUE_TEMPLATE/config.yml"
+  }
 }

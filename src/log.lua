@@ -27,47 +27,47 @@
 ---@field success fun(message: string): nil
 
 local Logger = {
-    LEVELS = {
-        DEBUG = { priority = 1, color = colors.gray },
-        INFO = { priority = 2, color = colors.lightGray },
-        WARNING = { priority = 3, color = colors.yellow },
-        ERROR = { priority = 4, color = colors.red },
-        SUCCESS = { priority = 2, color = colors.lime }
-    }
+	LEVELS = {
+		DEBUG = { priority = 1, color = colors.gray },
+		INFO = { priority = 2, color = colors.lightGray },
+		WARNING = { priority = 3, color = colors.yellow },
+		ERROR = { priority = 4, color = colors.red },
+		SUCCESS = { priority = 2, color = colors.lime },
+	},
 }
 
 function Logger.getTimestamp()
-    return os.date("[%Y-%m-%d %H:%M:%S]")
+	return os.date("[%Y-%m-%d %H:%M:%S]")
 end
 
 --- Log a message to the console as DEBUG
 --- @param ... any, arguments for message formatting.
 function Logger.debug(...)
-    Logger.log("DEBUG  ", string.format(...))
+	Logger.log("DEBUG  ", string.format(...))
 end
 
 --- Log a message to the console as INFO
 --- @param ... any, arguments for message formatting.
 function Logger.info(...)
-    Logger.log("INFO   ", string.format(...))
+	Logger.log("INFO   ", string.format(...))
 end
 
 --- Log a message to the console as WARNING
 --- @param ... any, arguments for message formatting.
 function Logger.warning(...)
-    Logger.log("WARNING", string.format(...))
+	Logger.log("WARNING", string.format(...))
 end
 
 --- Log a message to the console as ERROR
 --- @param ... any, arguments for message formatting.
 function Logger.error(...)
-    Logger.log("ERROR  ", string.format(...))
+	Logger.log("ERROR  ", string.format(...))
 end
 
 --- Log a message to the console as SUCCESS
 --- @param ... any, arguments for message formatting.
 function Logger.success(...)
-    Logger.log("SUCCESS", string.format(...))
+	Logger.log("SUCCESS", string.format(...))
 end
 
 return Logger

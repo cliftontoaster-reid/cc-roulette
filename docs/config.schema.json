@@ -1,91 +1,82 @@
 {
-    "$id": "https://github.com/cliftontoaster-reid/cc-roulette/blob/main/docs/config.schema.json",
-    "title": "ToasterSpin Config Schema",
-    "description": "Schema for the ToasterSpin config file",
-    "type": "object",
-    "properties": {
-        "version": {
-            "type": "string",
-            "description": "The version of the config file schema using Semantic Versioning",
-            "pattern": "^\\d+\\.\\d+\\.\\d+$"
-        },
-        "rewards": {
-            "type": "object",
-            "description": "The rewards that can be won",
-            "properties": {
-                "numeric": {
-                    "type": "number",
-                    "description": "The number with witch to multiply the bet to get the payout",
-                    "exclusiveMinimum": 0
-                },
-                "dozen": {
-                    "type": "number",
-                    "description": "The number of points awarded for winning the 1st 12, 2nd 12, and 3rd 12 options",
-                    "exclusiveMinimum": 0
-                },
-                "binary": {
-                    "type": "number",
-                    "description": "The number of points awarded for winning the 1-18, 19-36, EVEN, and ODD options",
-                    "exclusiveMinimum": 0
-                },
-                "colour": {
-                    "type": "number",
-                    "description": "The number of points awarded for winning the RED and BLACK options",
-                    "exclusiveMinimum": 0
-                }
-            },
-            "required": [
-                "numeric",
-                "dozen",
-                "binary",
-                "colour"
-            ]
-        },
-        "devices": {
-            "type": "object",
-            "description": "The devices that can be used to play the game",
-            "properties": {
-                "carpet": {
-                    "type": "string",
-                    "description": "The device that is used as carpet"
-                },
-                "ring": {
-                    "type": "string",
-                    "description": "The device that is used as ring"
-                },
-                "redstone": {
-                    "type": "string",
-                    "description": "The device that is used as redstone"
-                },
-                "ivmanagers": {
-                    "type": "array",
-                    "description": "The devices that are used as inventory managers",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "ivmanBigger": {
-                    "type": "number",
-                    "description": "The strength of the signal for the lowest inventory manager"
-                },
-                "modem": {
-                    "type": "string",
-                    "description": "The device that is used as modem"
-                }
-            },
-            "required": [
-                "carpet",
-                "ring",
-                "redstone",
-                "ivmanagers",
-                "ivmanBigger",
-                "modem"
-            ]
-        }
+  "$id": "https://github.com/cliftontoaster-reid/cc-roulette/blob/main/docs/config.schema.json",
+  "title": "ToasterSpin Config Schema",
+  "description": "Schema for the ToasterSpin config file",
+  "type": "object",
+  "properties": {
+    "version": {
+      "type": "string",
+      "description": "The version of the config file schema using Semantic Versioning",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
     },
-    "required": [
-        "version",
-        "rewards",
-        "devices"
-    ]
+    "rewards": {
+      "type": "object",
+      "description": "The rewards that can be won",
+      "properties": {
+        "numeric": {
+          "type": "number",
+          "description": "The number with witch to multiply the bet to get the payout",
+          "exclusiveMinimum": 0
+        },
+        "dozen": {
+          "type": "number",
+          "description": "The number of points awarded for winning the 1st 12, 2nd 12, and 3rd 12 options",
+          "exclusiveMinimum": 0
+        },
+        "binary": {
+          "type": "number",
+          "description": "The number of points awarded for winning the 1-18, 19-36, EVEN, and ODD options",
+          "exclusiveMinimum": 0
+        },
+        "colour": {
+          "type": "number",
+          "description": "The number of points awarded for winning the RED and BLACK options",
+          "exclusiveMinimum": 0
+        }
+      },
+      "required": ["numeric", "dozen", "binary", "colour"]
+    },
+    "devices": {
+      "type": "object",
+      "description": "The devices that can be used to play the game",
+      "properties": {
+        "carpet": {
+          "type": "string",
+          "description": "The device that is used as carpet"
+        },
+        "ring": {
+          "type": "string",
+          "description": "The device that is used as ring"
+        },
+        "redstone": {
+          "type": "string",
+          "description": "The device that is used as redstone"
+        },
+        "ivmanagers": {
+          "type": "array",
+          "description": "The devices that are used as inventory managers",
+          "items": {
+            "type": "string"
+          }
+        },
+        "ivmanBigger": {
+          "type": "number",
+          "description": "The strength of the signal for the lowest inventory manager"
+        },
+        "modem": {
+          "type": "string",
+          "description": "The device that is used as modem"
+        }
+      },
+      "required": [
+        "carpet",
+        "ring",
+        "redstone",
+        "ivmanagers",
+        "ivmanBigger",
+        "modem"
+      ]
+    }
+  },
+  "required": ["version", "rewards", "devices"]
 }

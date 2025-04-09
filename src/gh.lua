@@ -104,17 +104,17 @@ local gh = {}
 --- @param logger Logger The logger to use for output.
 --- @return Release[]|nil The releases for the repository, or nil if an error occurred.
 function gh.getReleases(githubUser, githubRepo, logger)
-    local url = string.format("https://api.github.com/repos/%s/%s/releases", githubUser, githubRepo)
-    logger.info("Fetching releases from GitHub API...")
-    local response = http.get(url)
-    if not response then
-        logger.error("Failed to fetch releases from GitHub API")
-        return nil
-    end
-    local data = response.readAll()
-    response.close()
-    logger.debug("Received " .. #data .. " bytes of release data")
-    return textutils.unserializeJSON(data)
+	local url = string.format("https://api.github.com/repos/%s/%s/releases", githubUser, githubRepo)
+	logger.info("Fetching releases from GitHub API...")
+	local response = http.get(url)
+	if not response then
+		logger.error("Failed to fetch releases from GitHub API")
+		return nil
+	end
+	local data = response.readAll()
+	response.close()
+	logger.debug("Received " .. #data .. " bytes of release data")
+	return textutils.unserializeJSON(data)
 end
 
 return gh

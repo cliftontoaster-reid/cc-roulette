@@ -32,75 +32,74 @@ carpet.init("left")
 
 -- Add more test bets
 local bet2 = {
-    amount = 50,
-    color = 8, -- pink
-    player = "alice",
-    number = 7
+	amount = 50,
+	color = 8, -- pink
+	player = "alice",
+	number = 7,
 }
 carpet.bets[2] = bet2
 
 local bet3 = {
-    amount = 200,
-    color = 1, -- orange
-    player = "bob",
-    number = 24
+	amount = 200,
+	color = 1, -- orange
+	player = "bob",
+	number = 24,
 }
 carpet.bets[3] = bet3
 
 -- Add a bet on the same number as another bet
 local bet4 = {
-    amount = 75,
-    color = 4, -- yellow
-    player = "dave",
-    number = 3
+	amount = 75,
+	color = 4, -- yellow
+	player = "dave",
+	number = 3,
 }
 carpet.bets[4] = bet4
 
 -- Add a bet on zero
 local bet5 = {
-    amount = 150,
-    color = 11, -- lightBlue
-    player = "emma",
-    number = 29
+	amount = 150,
+	color = 11, -- lightBlue
+	player = "emma",
+	number = 29,
 }
 carpet.bets[5] = bet5
 
-
 local bet6 = {
-    amount = 100,
-    color = 2, -- green
-    player = "frank",
-    number = 29
+	amount = 100,
+	color = 2, -- green
+	player = "frank",
+	number = 29,
 }
 carpet.bets[6] = bet6
 
 -- Add a bet on 52
 local bet7 = {
-    amount = 100,
-    color = 2, -- green
-    player = "frank",
-    number = 52
+	amount = 100,
+	color = 2, -- green
+	player = "frank",
+	number = 52,
 }
 carpet.bets[7] = bet7
 
 carpet.update()
 
 while true do
-    local event = { os.pullEventRaw() }
-    if event[1] == "monitor_touch" then
-        print("Monitor touched at " .. event[3] .. "," .. event[4])
+	local event = { os.pullEventRaw() }
+	if event[1] == "monitor_touch" then
+		print("Monitor touched at " .. event[3] .. "," .. event[4])
 
-        local clickedNumber = carpet.findClickedNumber(event[3], event[4])
-        if clickedNumber then
-            print("Clicked number: " .. clickedNumber)
-        else
-            print("No valid number clicked.")
-        end
+		local clickedNumber = carpet.findClickedNumber(event[3], event[4])
+		if clickedNumber then
+			print("Clicked number: " .. clickedNumber)
+		else
+			print("No valid number clicked.")
+		end
 
-        -- carpet.update()
-    elseif event[1] == "terminate" then
-        break
-    end
+		-- carpet.update()
+	elseif event[1] == "terminate" then
+		break
+	end
 
-    os.sleep(0.1)
+	os.sleep(0.1)
 end

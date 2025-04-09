@@ -7,6 +7,7 @@
 Security vulnerabilities should be reported directly to the project team through private channels:
 
 - **Developer**:
+
   - Discord: [Discord User](https://discord.com/users/571975224803721226)
   - Email: <cliftontreid@duck.com>
 

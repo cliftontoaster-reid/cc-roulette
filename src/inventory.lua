@@ -80,9 +80,10 @@ local function takeMoneyFromPlayer(idx, amount)
 		return nil
 	end
 	if result ~= amount then
-		Logger.debug("Failed to take %d money from player %d, took %d", amount, idx, result)
+		Logger.debug("Failed to take %d money from player %s, took %d", amount, inv.getPlayer(idx), result)
 		return nil
 	end
+	Logger.debug("Successfully took %d money from player %s", amount, inv.getPlayer(idx))
 	return amount
 end
 

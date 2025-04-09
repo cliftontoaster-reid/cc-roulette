@@ -45,7 +45,7 @@ end
 function Logger.debug(...)
 	local msg = string.format(...)
 	if msg then
-		Logger.log("DEBUG  ", msg)
+		Logger.log("DEBUG", msg)
 	end
 end
 
@@ -54,7 +54,7 @@ end
 function Logger.info(...)
 	local msg = string.format(...)
 	if msg then
-		Logger.log("INFO   ", msg)
+		Logger.log("INFO", msg)
 	end
 end
 
@@ -72,7 +72,7 @@ end
 function Logger.error(...)
 	local msg = string.format(...)
 	if msg then
-		Logger.log("ERROR  ", msg)
+		Logger.log("ERROR", msg)
 	end
 end
 

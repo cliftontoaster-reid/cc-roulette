@@ -109,7 +109,7 @@ local function addMoneyToPlayer(idx, amount)
 		Logger.debug("Added %d money to player %d, but expected %d", res, idx, amount)
 		-- take back the money given
 		local takeBackSuccess = pcall(function()
-			player.removeItemFromPlayer("bottom", {
+			player.addItemToPlayer("bottom", {
 				name = money,
 				count = res,
 			})

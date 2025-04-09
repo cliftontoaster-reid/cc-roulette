@@ -269,6 +269,9 @@ local function mainLoop()
             handleRedstoneEvent()
         elseif rEvent[1] == "monitor_touch" then
             handleMonitorTouch(rEvent[2], rEvent[3], rEvent[4])
+        elseif rEvent[1] == "terminate" then
+            Logger.info("Terminating program")
+            error("Program terminated by user", 0)
         end
     end
 end

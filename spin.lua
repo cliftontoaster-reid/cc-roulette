@@ -41,6 +41,18 @@ local toml = require("src.toml")
 local config
 local currentBetter = -1
 
+local ucolors = {
+    -- Cannot be red, black or green
+    colors.orange,
+    colors.yellow,
+    colors.pink,
+    colors.cyan,
+    colors.blue,
+    colors.purple,
+    colors.white,
+    colors.gray,
+}
+
 ---@return ClientConfig
 local function loadConfig()
     local file = fs.open("/config.toml", "r")
@@ -200,7 +212,7 @@ local function mainLoop()
         end
 
         local player = iv.getPlayer(currentBetter)
-        carpet.addBet(1, currentBetter, player or "", nbr)
+        carpet.addBet(1, ucolors[currentBetter], player or "", nbr)
         Logger.info("Bet added successfully")
     end
 

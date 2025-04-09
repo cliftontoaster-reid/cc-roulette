@@ -233,7 +233,7 @@ local function mainLoop()
                     return
                 end
 
-                local res = iv.addMoneyToPlayer(idx, payout)
+                local res = iv.addMoneyToPlayer(idx - 1, payout)
                 if res == nil then
                     Logger.error("Error adding money to player " .. b.player)
                     return

@@ -22,7 +22,7 @@
 ---@field isSpaceAvailable fun(): boolean
 ---@field getEmptySpace fun(): number
 
-local money = "minecraft:emerald"
+local money = "numismatics:sprocket"
 local Logger = require("src.log")
 
 ---@type table<number, IvMnager>

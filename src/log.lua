@@ -85,4 +85,21 @@ function Logger.success(...)
 	end
 end
 
+--- Log a message to the console with a specific level
+--- @param level string The log level (DEBUG, INFO, WARNING, ERROR, SUCCESS)
+--- @param ... any, arguments for message formatting.
+function Logger.log(level, ...)
+	local msg = string.format(...)
+	if msg then
+		local logLevel = Logger.LEVELS[level]
+		if logLevel then
+			term.setTextColor(logLevel.color)
+			print(string.format("%s %s: %s", Logger.getTimestamp(), level, msg))
+			term.setTextColor(colors.white)
+		else
+			error("Invalid log level: " .. level)
+		end
+	end
+end
+
 return Logger

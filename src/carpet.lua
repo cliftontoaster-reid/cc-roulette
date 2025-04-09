@@ -147,7 +147,7 @@ local function printRow(rowDef)
 
 	-- Print the regular items in the row
 	for i, item in ipairs(rowDef.items) do
-		local posx = (i - 1) * rowDef.spacing
+		local posx = 2 + (i - 1) * rowDef.spacing
 
 		-- Set color based on whether it's a number or special item
 		if type(item) == "number" then
@@ -156,23 +156,23 @@ local function printRow(rowDef)
 			mon.setBackgroundColour((i % 2 == 0) and colours.red or colours.black)
 		end
 
-		mon.setCursorPos(posx + 2, rowDef.rowPos + 1)
+		mon.setCursorPos(posx, rowDef.rowPos + 1)
 		mon.write(formatDisplayText(item, rowDef.itemWidth))
 
 		-- Determine the bet number - either the number itself or its special value
 		local betNumber = type(item) == "number" and item or specialValues[item]
-		printBet(betNumber, rowDef.rowPos + 2, posx + 2)
+		printBet(betNumber, rowDef.rowPos + 2, posx)
 	end
 
 	-- Print the special column if specified
 	if rowDef.special then
-		local posx = #rowDef.items * rowDef.spacing
-		mon.setCursorPos(posx + 2, rowDef.rowPos + 1)
+		local posx = 2 + (#rowDef.items * rowDef.spacing)
+		mon.setCursorPos(posx, rowDef.rowPos + 1)
 		mon.setBackgroundColour(colours.black)
 		-- Use specialWidth if defined, otherwise fall back to itemWidth
 		local displayWidth = rowDef.specialWidth or rowDef.itemWidth
 		mon.write(formatDisplayText(rowDef.special, displayWidth))
-		printBet(specialValues[rowDef.special], rowDef.rowPos + 2, posx + 2)
+		printBet(specialValues[rowDef.special], rowDef.rowPos + 2, posx)
 	end
 end
 

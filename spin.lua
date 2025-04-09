@@ -196,6 +196,7 @@ local function mainLoop()
         local ballance = iv.getMoneyInPlayer(currentBetter)
         if ballance == nil or ballance <= 0 then
             Logger.error("Player " .. currentBetter .. " has no money")
+            Logger.debug("Player is " .. (iv.getPlayer(currentBetter) or ""))
             return
         end
 

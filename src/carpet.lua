@@ -197,36 +197,36 @@ local function update()
 		printRow(rowDef)
 	end
 end
+
 --- Finds the clicked number or special value based on the x and y coordinates in the layout.
----
----This function iterates over rows defined in the 'layout' to determine which item was clicked.
----It handles both regular items and optionally a special column defined per row.
----
----Regular items are determined by dividing the x-coordinate adjusted by an offset (here -2)
----by the spacing defined for the row, and then checking if the index is within bounds.
----
----For rows with a special column, if the click is outside the bounds of the regular items,
----the function checks if the click falls within the bounds allocated for the special column.
 ---
 ---@param x number The x-coordinate of the click position.
 ---@param y number The y-coordinate of the click position.
 ---@return number|nil Returns the number corresponding to the clicked item, or a special value if the special column was clicked.
----                   Returns nil if no valid clickable area was found.
 local function findClickedNumber(x, y)
 	-- Check each row in the layout to find what was clicked
 	for _, rowDef in ipairs(layout) do
-		if y >= rowDef.rowPos and y <= rowDef.rowPos + 9 then
+		-- Check if click is within the row's vertical bounds
+		-- Using MAX_BETS + 2 for consistency with row spacing in layout definition
+		if y >= rowDef.rowPos and y <= rowDef.rowPos + MAX_BETS + 2 then
 			-- Check for regular items
-			local col = math.floor((x - 2) / rowDef.spacing)
-			if col >= 0 and col < #rowDef.items then
-				local item = rowDef.items[col + 1]
-				return type(item) == "number" and item or specialValues[item]
+			for i, item in ipairs(rowDef.items) do
+				local itemX = 2 + (i - 1) * rowDef.spacing
+				local itemWidth = rowDef.itemWidth
+
+				-- If click is within this item's bounds
+				if x >= itemX and x < itemX + itemWidth then
+					return type(item) == "number" and item or specialValues[item]
+				end
 			end
 
-			-- Check for special column
+			-- Check for special column if defined
 			if rowDef.special then
-				local specialX = x - rowDef.spacing * #rowDef.items
-				if specialX >= 0 and specialX <= (rowDef.specialWidth or rowDef.itemWidth) + 2 then
+				local specialX = 2 + (#rowDef.items * rowDef.spacing)
+				local specialWidth = rowDef.specialWidth or rowDef.itemWidth
+
+				-- If click is within the special column bounds
+				if x >= specialX and x < specialX + specialWidth then
 					return specialValues[rowDef.special]
 				end
 			end

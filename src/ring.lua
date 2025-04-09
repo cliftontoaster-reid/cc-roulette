@@ -454,11 +454,6 @@ function ring.init(monitor)
 	local totalWidth = SPACING_X * 12
 	local totalHeight = SPACING_Y * 12
 
-	if w < totalWidth or h < totalHeight then
-		error("Monitor is too small to display the ring", 0)
-		return
-	end
-
 	START_X = math.floor((w - totalWidth) / 2)
 	START_Y = math.floor((h - totalHeight) / 2)
 

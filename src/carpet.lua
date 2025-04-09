@@ -30,9 +30,9 @@ local mon = nil
 local bets = {}
 
 -- Global variables for display configuration
-local NUMBER_SPACING = 9                          -- Distance between numbers
-local NUMBER_WIDTH = 6                            -- Width of the number display area
-local DOZEN_WIDTH = 10                            -- Width for dozen columns (1st 12, etc.)
+local NUMBER_SPACING = 6                          -- Distance between numbers
+local NUMBER_WIDTH = 3                            -- Width of the number display area
+local DOZEN_WIDTH = 6                             -- Width for dozen columns (1st 12, etc.)
 local SPECIAL_SPACING = (NUMBER_SPACING * 12) / 6 -- Distance between special displays
 local SPECIAL_WIDTH = SPECIAL_SPACING * 0.85      -- Width of the special display area
 local MAX_BETS = 5

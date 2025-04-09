@@ -23,6 +23,7 @@
 ---@field getEmptySpace fun(): number
 
 local money = "minecraft:emerald"
+local Logger = require("src.log")
 
 ---@type table<number, IvMnager>
 local invManagers = {}
@@ -45,6 +46,7 @@ local function getMoneyInPlayer(idx)
 		return nil
 	end
 	if item.name ~= money then
+		Logger.debug("Item in off-hand is not money: " .. item.name)
 		return nil
 	end
 	return item.count

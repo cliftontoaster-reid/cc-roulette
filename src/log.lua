@@ -85,37 +85,20 @@ function Logger.success(...)
 	end
 end
 
--- Update the main log function to align output
-function Logger.log(level, message)
-	local trimmedLevel = level:gsub("%s+$", "")
-	local logConfig = Logger.LEVELS[trimmedLevel]
-	local currentLevel = Logger.LEVELS[CONFIG.LOG_LEVEL].priority
-
-	if logConfig.priority >= currentLevel then
-		local oldColour = term.getTextColour()
-
-		-- Use colour only if supported
-		if term.isColor() then
-			term.setTextColour(logConfig.color)
+--- Log a message to the console with a specific level
+--- @param level string The log level (DEBUG, INFO, WARNING, ERROR, SUCCESS)
+--- @param ... any, arguments for message formatting.
+function Logger.log(level, ...)
+	local msg = string.format(...)
+	if msg then
+		local logLevel = Logger.LEVELS[level]
+		if logLevel then
+			term.setTextColor(logLevel.color)
+			print(string.format("%s %s: %s", Logger.getTimestamp(), level, msg))
+			term.setTextColor(colors.white)
+		else
+			error("Invalid log level: " .. level)
 		end
-
-		-- Format with fixed width for level to ensure alignment
-		local timestamp = Logger.getTimestamp()
-		local levelPadded = string.format("%-8s", "[" .. level .. "]")
-		local logMessage = timestamp .. " " .. levelPadded .. " " .. message
-
-		print(logMessage)
-
-		-- Write to log file if enabled
-		if CONFIG.LOG_FILE then
-			local file = fs.open(CONFIG.LOG_FILE, fs.exists(CONFIG.LOG_FILE) and "a" or "w")
-			if file then
-				file.writeLine(logMessage)
-				file.close()
-			end
-		end
-
-		term.setTextColour(oldColour)
 	end
 end
 

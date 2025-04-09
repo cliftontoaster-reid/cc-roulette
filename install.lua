@@ -65,40 +65,6 @@ local function getReleases(githubUser, githubRepo, logger)
 	return textutils.unserializeJSON(data)
 end
 
--- Update the main log function to align output
-function Logger.log(level, message)
-	local trimmedLevel = level:gsub("%s+$", "")
-	local logConfig = Logger.LEVELS[trimmedLevel]
-	local currentLevel = Logger.LEVELS[CONFIG.LOG_LEVEL].priority
-
-	if logConfig.priority >= currentLevel then
-		local oldColour = term.getTextColour()
-
-		-- Use colour only if supported
-		if term.isColor() then
-			term.setTextColour(logConfig.color)
-		end
-
-		-- Format with fixed width for level to ensure alignment
-		local timestamp = Logger.getTimestamp()
-		local levelPadded = string.format("%-8s", "[" .. level .. "]")
-		local logMessage = timestamp .. " " .. levelPadded .. " " .. message
-
-		print(logMessage)
-
-		-- Write to log file if enabled
-		if CONFIG.LOG_FILE then
-			local file = fs.open(CONFIG.LOG_FILE, fs.exists(CONFIG.LOG_FILE) and "a" or "w")
-			if file then
-				file.writeLine(logMessage)
-				file.close()
-			end
-		end
-
-		term.setTextColour(oldColour)
-	end
-end
-
 -- Utility functions
 local function printHeader(text)
 	local oldColor = term.getTextColor()

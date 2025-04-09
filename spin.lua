@@ -212,7 +212,7 @@ local function mainLoop()
         end
 
         local player = iv.getPlayer(currentBetter)
-        carpet.addBet(1, ucolors[currentBetter], player or "", nbr)
+        carpet.addBet(1, ucolors[currentBetter + 1], player or "", nbr)
         Logger.info("Bet added successfully")
     end
 

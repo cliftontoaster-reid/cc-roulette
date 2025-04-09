@@ -34,7 +34,7 @@ local inv = {}
 ---@param idx number The player index in invManagers
 ---@return number|nil The count of money items, or nil if player not found, no item in off-hand, or item is not money
 local function getMoneyInPlayer(idx)
-	local player = invManagers[idx]
+	local player = invManagers[idx + 1]
 	if not player then
 		Logger.debug("Player %d not found", idx)
 		return nil
@@ -59,7 +59,7 @@ end
 ---@param amount number The amount of money to take from the player
 ---@return number|nil The amount taken if successful, nil if player not found or has insufficient funds
 local function takeMoneyFromPlayer(idx, amount)
-	local player = invManagers[idx]
+	local player = invManagers[idx + 1]
 	if not player then
 		return nil
 	end
@@ -87,7 +87,7 @@ end
 ---@param amount number The amount of money to add to the player
 ---@return number|nil The amount added if successful, nil if player not found or adding fails
 local function addMoneyToPlayer(idx, amount)
-	local player = invManagers[idx]
+	local player = invManagers[idx + 1]
 	if not player then
 		return nil
 	end
@@ -122,7 +122,7 @@ end
 ---@param idx number The player index in invManagers
 ---@return string|nil The player owner identifier, or nil if player not found
 local function getPlayer(idx)
-	local player = invManagers[idx]
+	local player = invManagers[idx + 1]
 	if not player then
 		return nil
 	end

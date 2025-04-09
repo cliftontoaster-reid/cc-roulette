@@ -89,6 +89,7 @@ end
 local function addMoneyToPlayer(idx, amount)
 	local player = invManagers[idx + 1]
 	if not player then
+		Logger.debug("Player %d not found", idx)
 		return nil
 	end
 
@@ -100,10 +101,12 @@ local function addMoneyToPlayer(idx, amount)
 	end)
 
 	if not success then
+		Logger.debug("Failed to add money to player %d", idx)
 		return nil
 	end
 
 	if res ~= amount then
+		Logger.debug("Added %d money to player %d, but expected %d", res, idx, amount)
 		-- take back the money given
 		local takeBackSuccess = pcall(function()
 			player.removeItemFromPlayer("bottom", {
@@ -111,10 +114,14 @@ local function addMoneyToPlayer(idx, amount)
 				count = res,
 			})
 		end)
+		if not takeBackSuccess then
+			Logger.debug("Failed to take back money from player %d", idx)
+		end
 		-- Even if takeBackSuccess fails, we still return nil
 		return nil
 	end
 
+	Logger.debug("Added %d money to player %d", amount, idx)
 	return amount
 end
 

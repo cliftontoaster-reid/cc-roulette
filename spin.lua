@@ -248,6 +248,7 @@ local function mainLoop()
             end
         end
         carpet.resetBets()
+        carpet.update()
         Logger.info("Bets reset successfully")
     end
 

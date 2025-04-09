@@ -241,7 +241,6 @@ local function mainLoop()
 
                 Logger.info("Money added to player " .. b.player)
                 Logger.info("Bet removed for player " .. b.player)
-                mod.resetBallance(b.player)
                 Logger.info("Payout sent to server")
             else
                 Logger.info("No payout for bet")

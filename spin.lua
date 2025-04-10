@@ -236,7 +236,7 @@ local function mainLoop()
 
                 local res = iv.addMoneyToPlayer(idx - 1, payout)
                 if res == nil then
-                    Logger.error("Error adding money to player " .. b.player)
+                    Logger.error("Failed to give money to player " .. b.player)
                     return
                 end
 
@@ -246,6 +246,7 @@ local function mainLoop()
             else
                 Logger.info("No payout for bet")
             end
+            carpet.removeBet(b)
         end
         carpet.resetBets()
         carpet.update()

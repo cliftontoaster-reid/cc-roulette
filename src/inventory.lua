@@ -23,6 +23,8 @@
 ---@field getEmptySpace fun(): number
 
 local money = "numismatics:sprocket"
+local invside = "bottom"
+
 local Logger = require("src.log")
 
 ---@type table<number, IvMnager>
@@ -70,7 +72,7 @@ local function takeMoneyFromPlayer(idx, amount)
 	end
 
 	local success, result = pcall(function()
-		return player.removeItemFromPlayer("bottom", {
+		return player.removeItemFromPlayer(invside, {
 			name = money,
 			count = amount,
 		})
@@ -99,7 +101,7 @@ local function addMoneyToPlayer(idx, amount)
 	end
 
 	local success, res = pcall(function()
-		return player.addItemToPlayer("bottom", {
+		return player.addItemToPlayer(invside, {
 			name = money,
 			count = amount,
 		})
@@ -114,7 +116,7 @@ local function addMoneyToPlayer(idx, amount)
 		Logger.debug("Added %d money to player %d, but expected %d", res, idx, amount)
 		-- take back the money given
 		local takeBackSuccess = pcall(function()
-			player.addItemToPlayer("bottom", {
+			player.removeItemFromPlayer(invside, {
 				name = money,
 				count = res,
 			})

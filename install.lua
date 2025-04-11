@@ -141,7 +141,6 @@ local function downloadCCArchive()
 			Logger.error("Failed to download " .. file .. ": " .. error)
 			error(err)
 		end
-		os.sleep(0.2) -- Prevent rate limiting
 	end
 
 	Logger.success("Successfully downloaded all CC-Archive components")

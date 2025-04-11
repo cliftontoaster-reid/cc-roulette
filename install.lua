@@ -38,13 +38,21 @@ local semver = require("src.semver")
 local args = { ... }
 local forceDev = false
 local forceDel = false
+local quietRun = false
+local logLevel = CONFIG.LOG_LEVEL
 for i, arg in ipairs(args) do
 	if arg == "--dev" then
 		forceDev = true
 	elseif arg == "--del" then
 		forceDel = true
+	elseif arg == "--quiet" then
+		quietRun = true
+	elseif arg == "--log-level" then
+		logLevel = args[i + 1] or logLevel
 	end
 end
+
+Logger.setLogLevel(logLevel)
 
 --- Fetches the releases for a given GitHub repository.
 --- @param githubUser string The GitHub username of the repository owner.
@@ -313,7 +321,7 @@ local function main()
 
 	local config = require("tools.config")
 
-	if not update then
+	if not update or not quietRun then
 		if config.askYesNo("Would you like to configure the program now?") then
 			local dev = config.askOption("What device would you like to configure?", { "Table", "Server" })
 			if dev == "Table" then

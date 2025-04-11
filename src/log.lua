@@ -25,6 +25,10 @@
 ---@field warning fun(message: string): nil
 ---@field error fun(message: string): nil
 ---@field success fun(message: string): nil
+---@field getLogLevel fun(): string
+---@field setLogLevel fun(level: string): nil
+
+local CURRENT_LOG_LEVEL = "DEBUG" -- Default level, shows all logs
 
 local Logger = {
 	LEVELS = {
@@ -85,6 +89,22 @@ function Logger.success(...)
 	end
 end
 
+--- Get the current log level
+--- @return string The current log level
+function Logger.getLogLevel()
+	return CURRENT_LOG_LEVEL
+end
+
+--- Set the log level, logs below this level will be ignored
+--- @param level string The log level (DEBUG, INFO, WARNING, ERROR, SUCCESS)
+function Logger.setLogLevel(level)
+	if not Logger.LEVELS[level] then
+		error("Invalid log level: " .. level)
+		return
+	end
+	CURRENT_LOG_LEVEL = level
+end
+
 --- Log a message to the console with a specific level
 --- @param level string The log level (DEBUG, INFO, WARNING, ERROR, SUCCESS)
 --- @param ... any, arguments for message formatting.
@@ -93,9 +113,13 @@ function Logger.log(level, ...)
 	if msg then
 		local logLevel = Logger.LEVELS[level]
 		if logLevel then
-			term.setTextColor(logLevel.color)
-			print(string.format("%s %s: %s", Logger.getTimestamp(), level, msg))
-			term.setTextColor(colors.white)
+			-- Check if this log level should be displayed
+			local currentLevelInfo = Logger.LEVELS[CURRENT_LOG_LEVEL]
+			if currentLevelInfo and logLevel.priority >= currentLevelInfo.priority then
+				term.setTextColor(logLevel.color)
+				print(string.format("%s %s: %s", Logger.getTimestamp(), level, msg))
+				term.setTextColor(colors.white)
+			end
 		else
 			error("Invalid log level: " .. level)
 		end

@@ -223,7 +223,7 @@ local function mainLoop()
         local nbr = ring.launchBall(math.random(min, max))
         local bets = carpet.getBets()
 
-        print("Running through " .. #bets .. " bets")
+        Logger.info("Running through " .. #bets .. " bets")
         for _, b in ipairs(bets) do
             Logger.debug("Checking bet for player " ..
                 b.player .. " on number " .. b.number .. " with color " .. b.color .. " and amount " .. b.amount)
@@ -233,19 +233,16 @@ local function mainLoop()
                 Logger.info("Payout for bet: " .. payout)
                 local idx = iv.findPlayer(b.player)
                 if idx == nil then
-                    Logger.error("Player not found")
-                    return
+                    Logger.error("Player " .. b.player .. " not found for payout")
+                else
+                    local res = iv.addMoneyToPlayer(idx - 1, payout)
+                    if res == nil then
+                        Logger.error("Failed to give money to player " .. b.player)
+                    else
+                        Logger.info("Money added to player " .. b.player)
+                    end
                 end
-
-                local res = iv.addMoneyToPlayer(idx - 1, payout)
-                if res == nil then
-                    Logger.error("Failed to give money to player " .. b.player)
-                    return
-                end
-
-                Logger.info("Money added to player " .. b.player)
-                Logger.info("Bet removed for player " .. b.player)
-                Logger.info("Payout sent to server")
+                Logger.info("Payout processed for player " .. b.player)
             else
                 Logger.info("No payout for bet")
             end

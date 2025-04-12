@@ -246,7 +246,6 @@ local function mainLoop()
             else
                 Logger.info("No payout for bet")
             end
-            carpet.removeBet(b)
         end
         carpet.resetBets()
         carpet.update()

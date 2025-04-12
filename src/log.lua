@@ -105,6 +105,8 @@ function Logger.setLogLevel(level)
 	CURRENT_LOG_LEVEL = level
 end
 
+local logFile = fs.open("/log.txt", "a")
+
 --- Log a message to the console with a specific level
 --- @param level string The log level (DEBUG, INFO, WARNING, ERROR, SUCCESS)
 --- @param ... any, arguments for message formatting.
@@ -118,6 +120,8 @@ function Logger.log(level, ...)
 			if currentLevelInfo and logLevel.priority >= currentLevelInfo.priority then
 				term.setTextColor(logLevel.color)
 				print(string.format("%s %s: %s", Logger.getTimestamp(), level, msg))
+				logFile.write(string.format("%s %s: %s\n", Logger.getTimestamp(), level, msg))
+				logFile.flush()
 				term.setTextColor(colors.white)
 			end
 		else

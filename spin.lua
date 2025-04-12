@@ -223,7 +223,10 @@ local function mainLoop()
         local nbr = ring.launchBall(math.random(min, max))
         local bets = carpet.getBets()
 
+        print("Running through " .. #bets .. " bets")
         for _, b in ipairs(bets) do
+            Logger.debug("Checking bet for player " ..
+                b.player .. " on number " .. b.number .. " with color " .. b.color .. " and amount " .. b.amount)
             local payout = getPayout(b, nbr)
 
             if payout then

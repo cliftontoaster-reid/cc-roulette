@@ -243,22 +243,31 @@ end
 ---@param number number The number to bet on
 ---@return nil
 local function addBet(amount, color, player, number)
+	local Logger = require("src.log")
+	Logger.info("Adding bet: " .. amount .. " from player " .. player .. " on number " .. number)
+
 	-- Check if the player has already placed a bet on this number
 	---@type Bet
 	local existingBet = nil
-	for _, v in pairs(bets) do
+	for i, v in pairs(bets) do
+		Logger.debug("Checking bet " .. i .. " from player " .. v.player)
 		if v.player == player and v.number == number then
 			existingBet = v
+			Logger.info("Found existing bet from " .. player .. " on number " .. number)
 			break
 		end
 	end
 
 	if existingBet then
+		Logger.info("Updating existing bet from " ..
+		player .. " from " .. existingBet.amount .. " to " .. (existingBet.amount + amount))
 		existingBet.amount = existingBet.amount + amount
 	else
+		Logger.info("Creating new bet for " .. player .. " of " .. amount .. " on number " .. number)
 		table.insert(bets, { amount = amount, color = color, player = player, number = number })
 	end
 	update()
+	Logger.info("Bet added successfully")
 end
 
 local grid = {}

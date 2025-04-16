@@ -214,6 +214,7 @@ local function mainLoop()
         local player = iv.getPlayer(currentBetter)
         carpet.addBet(1, ucolors[currentBetter + 1], player or "", nbr)
         Logger.info("Bet added successfully")
+        os.sleep(0.2)
     end
 
     -- Handle ring monitor touch events

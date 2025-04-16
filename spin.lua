@@ -238,6 +238,7 @@ local function mainLoop()
                     local res = iv.addMoneyToPlayer(idx - 1, payout)
                     if res == nil then
                         Logger.error("Failed to give money to player " .. b.player)
+                        emergencyWrite(nbr, bets)
                     else
                         Logger.info("Money added to player " .. b.player)
                     end

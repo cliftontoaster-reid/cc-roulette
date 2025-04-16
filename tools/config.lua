@@ -15,6 +15,9 @@ local expect = require "cc.expect".expect
 local config = {}
 
 local function choice_impl(text, choices, add_space)
+	expect(1, text, "string")
+	expect(2, choices, "table")
+	expect(3, add_space, "boolean", "nil")
 	local results = {}
 	for n = 1, #choices do
 		local option = choices[n]
@@ -47,6 +50,7 @@ end
 ---@param message string The message to display
 ---@return boolean
 function config.askYesNo(message)
+	expect(1, message, "string")
 	local options = { "yes", "no" }
 	while true do
 		write(message .. " [Y/N]: ")
@@ -73,7 +77,7 @@ function config.askPeripheral(message, expectedType)
 		if response and peripheral.getType(response) then
 			if expectedType and peripheral.getType(response) ~= expectedType then
 				print("The peripheral is not of the expected type: " .. expectedType)
-				return config.askPeripheral(message, expectedType)
+				-- retry without recursion
 			else
 				return response
 			end
@@ -85,6 +89,7 @@ end
 --- @param message string The message to display
 --- @return string
 function config.askMonitor(message)
+	expect(1, message, "string")
 	while true do
 		print(message .. ": ")
 		local response = read(nil, nil, peripheral_extended)
@@ -100,11 +105,11 @@ function config.askMonitor(message)
 					return response
 				else
 					print("The monitor does not support color")
-					return config.askMonitor(message)
+					-- retry without recursion
 				end
 			else
 				print("The peripheral is not a monitor")
-				return config.askMonitor(message)
+				-- retry without recursion
 			end
 		end
 	end
@@ -112,6 +117,8 @@ end
 
 -- Helper function to ask for user input
 function config.askInput(message, default)
+	expect(1, message, "string")
+	expect(2, default, "nil", "string", "number")
 	term.clear()
 	term.setCursorPos(1, 1)
 	print(message)
@@ -129,6 +136,8 @@ end
 
 -- Helper function to ask for a numeric input
 function config.askNumber(message, default)
+	expect(1, message, "string")
+	expect(2, default, "nil", "number")
 	while true do
 		local input = config.askInput(message, default)
 		local num = tonumber(input)
@@ -142,6 +151,8 @@ end
 
 -- Helper function to ask for an option from a list
 function config.askOption(message, options)
+	expect(1, message, "string")
+	expect(2, options, "table")
 	while true do
 		term.clear()
 		term.setCursorPos(1, 1)

@@ -10,8 +10,38 @@
 ]]
 
 local completion = require("cc.completion")
+local expect = require "cc.expect".expect
 
 local config = {}
+
+local function choice_impl(text, choices, add_space)
+	local results = {}
+	for n = 1, #choices do
+		local option = choices[n]
+		if #option + (add_space and 1 or 0) > #text and option:sub(1, #text) == text then
+			local result = option:sub(#text + 1)
+			if add_space then
+				table.insert(results, result .. " ")
+			else
+				table.insert(results, result)
+			end
+		end
+	end
+	return results
+end
+
+local function peripheral_extended(text, add_space)
+	expect(1, text, "string")
+	expect(2, add_space, "boolean", "nil")
+
+	local perifs = peripheral.getNames();
+	-- Add directions to the list of peripherals
+	local sides = { "top", "bottom", "left", "right", "front", "back" }
+	for _, side in ipairs(sides) do
+		table.insert(perifs, side)
+	end
+	return choice_impl(text, perifs, add_space)
+end
 
 --- Asks the user for a yes or no response
 ---@param message string The message to display
@@ -34,12 +64,19 @@ end
 --- Asks the user for a peripheral
 --- @param message string The message to display
 --- @return string
-function config.askPeripheral(message)
+function config.askPeripheral(message, expectedType)
+	expect(1, message, "string")
+	expect(2, expectedType, "string", "nil")
 	while true do
 		print(message .. ": ")
-		local response = read()
+		local response = read(nil, nil, peripheral_extended)
 		if response and peripheral.getType(response) then
-			return response
+			if expectedType and peripheral.getType(response) ~= expectedType then
+				print("The peripheral is not of the expected type: " .. expectedType)
+				return config.askPeripheral(message, expectedType)
+			else
+				return response
+			end
 		end
 	end
 end
@@ -50,7 +87,7 @@ end
 function config.askMonitor(message)
 	while true do
 		print(message .. ": ")
-		local response = read()
+		local response = read(nil, nil, peripheral_extended)
 		if response and peripheral.getType(response) then
 			if peripheral.getType(response) == "monitor" then
 				local monitor = peripheral.wrap(response)
@@ -135,18 +172,18 @@ function config.configPeripherals()
 	local peripherals = peripheral.getNames()
 	print("Available peripherals: " .. table.concat(peripherals, ", "))
 
-	local carpet = config.askInput("Enter the carpet monitor name:", "monitor_0")
-	local ring = config.askInput("Enter the ring monitor name:", "monitor_1")
-	local redstone = config.askInput("Enter the redstone input side:", "back")
+	local carpet = config.askMonitor("Enter the carpet monitor name:")
+	local ring = config.askMonitor("Enter the ring monitor name:")
+	local redstone = config.askPeripheral("Enter the redstone input side:", nil)
 
 	local ivManagers = {}
 	local ivCount = config.askNumber("How many inventory managers?", 1)
 	for i = 1, ivCount do
-		ivManagers[i] = config.askInput("Enter inventory manager " .. i .. " name:", "playerDetector_" .. i)
+		ivManagers[i] = config.askPeripheral("Enter inventory manager " .. i .. " name:", "inventoryManager")
 	end
 
 	local ivmanBigger = config.askNumber("Base redstone signal strength:", 1)
-	local modem = config.askInput("Enter modem name:", "modem")
+	local modem = config.askPeripheral("Enter modem name:", "modem")
 
 	return {
 		carpet = carpet,

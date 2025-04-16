@@ -165,7 +165,6 @@ local function mainLoop()
     local carpet = require("src.carpet")
     local ring = require("src.ring")
     local Logger = require("src.log")
-    local mod = require("src.modem")
     local iv = require("src.inventory")
 
     -- Initialize devices

@@ -11,9 +11,4 @@
 
 local config = require("tools.config")
 
-local dev = config.askOption("What device would you like to configure?", { "Table", "Server" })
-if dev == "Table" then
-	config.configTable()
-elseif dev == "Server" then
-	error("Server configuration not yet implemented, we apologize for the inconvenience")
-end
+config.configTable()

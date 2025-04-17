@@ -41,7 +41,7 @@
 ---@field port number | nil Depending on context, this could be a listen port or the client-side of a socket. Absent if unknown. Please don't set to zero.
 
 local expect = require("cc.expect").expect
-local Logger = require("log")
+local Logger = require("src.log")
 
 ---@type string | nil
 local TEMPO_URL = nil

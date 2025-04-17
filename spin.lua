@@ -185,8 +185,13 @@ local function mainLoop()
     local Tracer = require("src.trace")
     local iv = require("src.inventory")
 
-    if config.debug and config.debug.loki then
-        Logger.setLoki(config.debug.loki)
+    if config.debug then
+        if config.debug.loki then
+            Logger.setLoki(config.debug.loki)
+        end
+        if config.debug.tempo then
+            Tracer.setTempo(config.debug.tempo)
+        end
     end
 
     -- Initialize devices

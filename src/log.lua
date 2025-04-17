@@ -17,23 +17,86 @@
     along with this library. If not, see <https://www.gnu.org/licenses/>.
 ]]
 
----@class Logger
----@field LEVELS table<string, {priority: number, color: number}>
----@field getTimestamp fun(): string
----@field debug fun(message: string): nil
----@field info fun(message: string): nil
----@field warning fun(message: string): nil
----@field error fun(message: string): nil
----@field success fun(message: string): nil
----@field getLogLevel fun(): string
----@field setLogLevel fun(level: string): nil
+---@class LokiRequest
+---@field streams LokiStream[]
+---@field streamMap table<string, number>
 
+---@class LokiStream
+---@field stream table<string, string>
+---@field values { [0]: string, [1]: string, [2]: LokiExtra | nil }[]
+
+---@class LokiExtra
+---@field trace_id string | nil
+---@field user_id string | nil
+
+---@type string | nil
+local LOKI_URL = nil              -- Loki URL for sending logs
 ---@type string
 local CURRENT_LOG_LEVEL = "DEBUG" -- Default level, shows all logs
 
 local expect = require("cc.expect").expect
 
-local Logger = {
+local Logger
+
+local function newRequest()
+	return {
+		streams = {},
+		streamMap = {}
+	}
+end
+
+local function newLokiEntry(msg, extra)
+	local entry = {
+		[0] = os.epoch() * 1e6, -- convert ms to ns
+		[1] = msg,
+	}
+	if extra then
+		entry[2] = extra
+	end
+	return entry
+end
+
+-- helper to batch log entries into streams by labels (including level)
+local function addToCache(level, msg, extra)
+	-- Construct a table of labels for this log entry.
+	-- 'job' is the computer label (or "unknown" if not set),
+	-- 'host' is the computer ID, and 'level' is the log level.
+	local labels = { job = os.getComputerLabel() or "unknown", host = os.getComputerID(), level = level }
+
+	-- Build a stable, unique key for this label set by concatenating sorted key-value pairs.
+	local parts = {}
+	for k, v in pairs(labels) do
+		parts[#parts + 1] = k .. "=" .. v
+	end
+	table.sort(parts) -- Ensure consistent order for the key.
+	local key = table.concat(parts, ",")
+
+	-- Check if a stream for this label set already exists in the cache.
+	local idx = Logger.cachedRequest.streamMap[key]
+	if not idx then
+		-- If not, create a new stream entry and update the stream map.
+		idx = #Logger.cachedRequest.streams + 1
+		Logger.cachedRequest.streams[idx] = { stream = labels, values = {} }
+		Logger.cachedRequest.streamMap[key] = idx
+	end
+
+	-- Add the new log entry (with optional extra fields) to the appropriate stream.
+	table.insert(Logger.cachedRequest.streams[idx].values, newLokiEntry(msg, extra))
+end
+
+-- retry HTTP POST with exponential backoff
+local function postWithRetry(url, body, headers)
+	local maxRetries, backoff = 3, 1
+	for i = 1, maxRetries do
+		local ok, resp = pcall(http.post, url, body, headers)
+		if ok and resp then return resp end
+		sleep(backoff)
+		backoff = backoff * 2
+	end
+	return nil
+end
+
+Logger = {
 	LEVELS = {
 		DEBUG = { priority = 1, color = colors.gray },
 		INFO = { priority = 2, color = colors.lightGray },
@@ -41,8 +104,57 @@ local Logger = {
 		ERROR = { priority = 4, color = colors.red },
 		SUCCESS = { priority = 2, color = colors.lime },
 	},
+	cachedRequest = newRequest(),
 }
 
+function Logger.setLokiURL(url)
+	expect(1, url, "string")
+	local valid, reason = http.checkURL(url)
+	if not valid then
+		Logger.error("The following URL (" .. url .. ") is invalid: " .. reason)
+		error("Invalid URL: " .. reason)
+		return
+	end
+	LOKI_URL = url
+end
+
+function Logger.getLokiURL()
+	return LOKI_URL
+end
+
+function Logger.sendLogs()
+	if LOKI_URL and #Logger.cachedRequest.streams > 0 then
+		local request = Logger.cachedRequest
+		local response = postWithRetry(LOKI_URL, textutils.serializeJSON(request), {
+			["Content-Type"] = "application/json",
+		})
+		if response then
+			-- temporarily disable Loki push for status logs
+			local prevURL = LOKI_URL
+			LOKI_URL = nil
+			if response.getResponseCode() == 204 then
+				Logger.info("Logs sent to Loki successfully.")
+			else
+				Logger.error("Failed to send logs to Loki. Response code: " .. response.getResponseCode())
+			end
+			LOKI_URL = prevURL
+		else
+			-- temporarily disable Loki push for status logs
+			local prevURL = LOKI_URL
+			LOKI_URL = nil
+			Logger.error("Failed to send logs to Loki.")
+			LOKI_URL = prevURL
+		end
+		-- clear the cache so sent logs aren’t re-sent
+		Logger.cachedRequest = newRequest()
+	end
+
+	-- Reset the cached request to avoid sending duplicate logs
+	Logger.cachedRequest = newRequest()
+end
+
+--- Returns the current timestamp in the format [YYYY-MM-DD HH:MM:SS]
+---@return string|osdate time
 function Logger.getTimestamp()
 	return os.date("[%Y-%m-%d %H:%M:%S]")
 end
@@ -135,7 +247,10 @@ function Logger.log(level, ...)
 			if currentLevelInfo and logLevel.priority >= currentLevelInfo.priority then
 				term.setTextColor(logLevel.color)
 				print(string.format("%s %s: %s", Logger.getTimestamp(), level, msg))
-				logFile.write(string.format("%s %s: %s\n", Logger.getTimestamp(), level, msg))
+				logFile.write(string.format("%s: %s\n", Logger.getTimestamp(), level, msg))
+				if LOKI_URL then
+					addToCache(level, msg)
+				end
 				logFile.flush()
 				term.setTextColor(colors.white)
 			end

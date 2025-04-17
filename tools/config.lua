@@ -178,6 +178,33 @@ function config.askOption(message, options)
 	end
 end
 
+-- Helper function to ask for a URL
+---@param message string The message to display
+---@param default string|nil The default URL
+---@return string | nil The validated URL
+function config.askURL(message, default)
+	expect(1, message, "string")
+	expect(2, default, "nil", "string")
+	while true do
+		local input = config.askInput(message, default)
+		if input == "" and default ~= nil then
+			input = default -- Ensure default is used if input is empty
+		end
+
+		if input and input ~= "" then
+			local ok, reason = http.checkURL(input)
+			if ok then
+				return input
+			else
+				print("Invalid URL: " .. (reason or "Unknown error"))
+				sleep(1)
+			end
+		else
+			return nil
+		end
+	end
+end
+
 -- Configure peripheral devices
 function config.configPeripherals()
 	local peripherals = peripheral.getNames()
@@ -221,6 +248,23 @@ function config.configRewards()
 	}
 end
 
+-- Configure debug options
+function config.configDebug()
+	local debug = config.askYesNo("Enable debug mode?")
+	local LokiURL = nil
+	local TempoURL = nil
+
+	if debug then
+		LokiURL = config.askURL("Enter Loki URL:", "http://localhost:3100")
+		TempoURL = config.askURL("Enter Tempo URL:", "http://localhost:3100")
+	end
+
+	return {
+		loki = LokiURL,
+		tempo = TempoURL,
+	}
+end
+
 -- Function to configure the table
 function config.configTable()
 	local toml = require("src.toml")
@@ -233,12 +277,15 @@ function config.configTable()
 	-- Configure rewards and peripherals
 	local rewards = config.configRewards()
 	local devices = config.configPeripherals()
+	local debug = config.configDebug()
 
 	-- Create the configuration
+	---@type ClientConfig
 	local fullConfig = {
 		version = "0.1.0",
 		rewards = rewards,
 		devices = devices,
+		debug = debug,
 	}
 
 	-- Save the configuration

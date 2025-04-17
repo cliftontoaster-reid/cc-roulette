@@ -28,7 +28,10 @@
 ---@field getLogLevel fun(): string
 ---@field setLogLevel fun(level: string): nil
 
+---@type string
 local CURRENT_LOG_LEVEL = "DEBUG" -- Default level, shows all logs
+
+local expect = require("cc.expect").expect
 
 local Logger = {
 	LEVELS = {
@@ -45,45 +48,55 @@ function Logger.getTimestamp()
 end
 
 --- Log a message to the console as DEBUG
+--- @param fmt string, format string for message.
 --- @param ... any, arguments for message formatting.
-function Logger.debug(...)
-	local msg = string.format(...)
+function Logger.debug(fmt, ...)
+	expect(1, fmt, "string")
+	local msg = string.format(fmt, ...)
 	if msg then
 		Logger.log("DEBUG", msg)
 	end
 end
 
 --- Log a message to the console as INFO
+--- @param fmt string, format string for message.
 --- @param ... any, arguments for message formatting.
-function Logger.info(...)
-	local msg = string.format(...)
+function Logger.info(fmt, ...)
+	expect(1, fmt, "string")
+	local msg = string.format(fmt, ...)
 	if msg then
 		Logger.log("INFO", msg)
 	end
 end
 
 --- Log a message to the console as WARNING
+--- @param fmt string, format string for message.
 --- @param ... any, arguments for message formatting.
-function Logger.warning(...)
-	local msg = string.format(...)
+function Logger.warning(fmt, ...)
+	expect(1, fmt, "string")
+	local msg = string.format(fmt, ...)
 	if msg then
 		Logger.log("WARNING", msg)
 	end
 end
 
 --- Log a message to the console as ERROR
+--- @param fmt string, format string for message.
 --- @param ... any, arguments for message formatting.
-function Logger.error(...)
-	local msg = string.format(...)
+function Logger.error(fmt, ...)
+	expect(1, fmt, "string")
+	local msg = string.format(fmt, ...)
 	if msg then
 		Logger.log("ERROR", msg)
 	end
 end
 
 --- Log a message to the console as SUCCESS
+--- @param fmt string, format string for message.
 --- @param ... any, arguments for message formatting.
-function Logger.success(...)
-	local msg = string.format(...)
+function Logger.success(fmt, ...)
+	expect(1, fmt, "string")
+	local msg = string.format(fmt, ...)
 	if msg then
 		Logger.log("SUCCESS", msg)
 	end
@@ -98,6 +111,7 @@ end
 --- Set the log level, logs below this level will be ignored
 --- @param level string The log level (DEBUG, INFO, WARNING, ERROR, SUCCESS)
 function Logger.setLogLevel(level)
+	expect(1, level, "string")
 	if not Logger.LEVELS[level] then
 		error("Invalid log level: " .. level)
 		return
@@ -111,6 +125,7 @@ local logFile = fs.open("/log.txt", "a")
 --- @param level string The log level (DEBUG, INFO, WARNING, ERROR, SUCCESS)
 --- @param ... any, arguments for message formatting.
 function Logger.log(level, ...)
+	expect(1, level, "string")
 	local msg = string.format(...)
 	if msg then
 		local logLevel = Logger.LEVELS[level]

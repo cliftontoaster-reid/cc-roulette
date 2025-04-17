@@ -34,7 +34,12 @@
           "exclusiveMinimum": 0
         }
       },
-      "required": ["numeric", "dozen", "binary", "colour"]
+      "required": [
+        "numeric",
+        "dozen",
+        "binary",
+        "colour"
+      ]
     },
     "devices": {
       "type": "object",
@@ -76,7 +81,21 @@
         "ivmanBigger",
         "modem"
       ]
+    },
+    "debug": {
+      "type": "object",
+      "description": "Debugging servers",
+      "properties": {
+        "loki": {
+          "type": "string",
+          "description": "The loki server to send logs to"
+        }
+      }
     }
   },
-  "required": ["version", "rewards", "devices"]
+  "required": [
+    "version",
+    "rewards",
+    "devices"
+  ]
 }

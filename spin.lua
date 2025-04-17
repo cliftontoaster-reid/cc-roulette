@@ -31,9 +31,14 @@
 ---@field ivmanagers table<number, string> The devices that are used as inventory managers
 ---@field ivmanBigger number The streigth of the signal for the lowest inventory manager
 
+---@class DebugConfig
+---@field loki string | nil The URL of the Loki server to send logs to
+
 ---@class ClientConfig
 ---@field version string The version of the config file schema using Semantic Versioning
 ---@field rewards Reward The rewards that can be given to the player
+---@field devices DeviceConfig The devices that are used in the game
+---@field debug DebugConfig The debug configuration
 
 local toml = require("src.toml")
 
@@ -77,7 +82,11 @@ local function defaultConfig()
             ring = "monitor_1",
             redstone = "back",
             ivmanagers = { "playerDetector_1" },
+            modem = "top",
             ivmanBigger = 1,
+        },
+        debug = {
+            loki = nil,
         },
     }
 
@@ -166,6 +175,10 @@ local function mainLoop()
     local ring = require("src.ring")
     local Logger = require("src.log")
     local iv = require("src.inventory")
+
+    if config.debug and config.debug.loki then
+        Logger.setLoki(config.debug.loki)
+    end
 
     -- Initialize devices
     iv.init(config.devices.ivmanagers)

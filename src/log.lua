@@ -54,6 +54,8 @@ local expect = require("cc.expect").expect
 
 local Logger
 
+--- Creates a new, empty Loki request object.
+---@return LokiRequest An empty request object with initialized streams and streamMap.
 local function newRequest()
 	return {
 		streams = {},
@@ -61,6 +63,10 @@ local function newRequest()
 	}
 end
 
+--- Creates a new Loki log entry with timestamp and message.
+---@param msg string The log message content.
+---@param extra LokiExtra | nil Optional extra data (like trace_id, user_id).
+---@return { [0]: number, [1]: string, [2]: LokiExtra | nil } A formatted Loki log entry.
 local function newLokiEntry(msg, extra)
 	local entry = {
 		[0] = os.epoch() * 1e6, -- convert ms to ns
@@ -72,7 +78,10 @@ local function newLokiEntry(msg, extra)
 	return entry
 end
 
--- helper to batch log entries into streams by labels (including level)
+--- Adds a log entry to the cached Loki request, grouping by labels.
+---@param level string The log level (e.g., "INFO", "ERROR").
+---@param msg string The log message.
+---@param extra LokiExtra | nil Optional extra data for the log entry.
 local function addToCache(level, msg, extra)
 	-- Construct a table of labels for this log entry.
 	-- 'job' is the computer label (or "unknown" if not set),
@@ -100,7 +109,11 @@ local function addToCache(level, msg, extra)
 	table.insert(Logger.cachedRequest.streams[idx].values, newLokiEntry(msg, extra))
 end
 
--- retry HTTP POST with exponential backoff
+--- Attempts to POST data with exponential backoff on failure.
+---@param url string The URL to POST to.
+---@param body string The request body.
+---@param headers table HTTP headers.
+---@return table | nil The HTTP response object on success, or nil after retries fail.
 local function postWithRetry(url, body, headers)
 	local maxRetries, backoff = 3, 1
 	for i = 1, maxRetries do
@@ -123,6 +136,9 @@ Logger = {
 	cachedRequest = newRequest(),
 }
 
+--- Sets the URL for the Loki logging endpoint.
+--- Validates the URL before setting it. Throws an error if the URL is invalid.
+--- @param url string The URL for the Loki push API (e.g., "http://loki:3100/loki/api/v1/push").
 function Logger.setLokiURL(url)
 	expect(1, url, "string")
 	local valid, reason = http.checkURL(url)
@@ -134,6 +150,8 @@ function Logger.setLokiURL(url)
 	LOKI_URL = url
 end
 
+--- Gets the currently configured Loki URL.
+--- @return string|nil The configured Loki URL, or nil if not set.
 function Logger.getLokiURL()
 	return LOKI_URL
 end

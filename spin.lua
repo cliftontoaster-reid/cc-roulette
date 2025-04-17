@@ -33,6 +33,14 @@
 
 ---@class DebugConfig
 ---@field loki string | nil The URL of the Loki server to send logs to
+---@field tempo string | nil The URL of the Tempo server to send traces to
+
+---@type number | nil
+local LokiTimer = nil
+local LokiSleepyTime = 5
+---@type number | nil
+local TempoTimer = nil
+local TempoSleepyTime = 2
 
 ---@class ClientConfig
 ---@field version string The version of the config file schema using Semantic Versioning
@@ -174,6 +182,7 @@ local function mainLoop()
     local carpet = require("src.carpet")
     local ring = require("src.ring")
     local Logger = require("src.log")
+    local Tracer = require("src.trace")
     local iv = require("src.inventory")
 
     if config.debug and config.debug.loki then
@@ -275,6 +284,9 @@ local function mainLoop()
         end
     end
 
+    LokiTimer = os.startTimer(LokiSleepyTime)
+    TempoTimer = os.startTimer(TempoSleepyTime)
+
     -- Main event loop
     while true do
         local rEvent = { os.pullEventRaw() }
@@ -286,6 +298,14 @@ local function mainLoop()
         elseif rEvent[1] == "terminate" then
             Logger.info("Terminating program")
             error("Program terminated by user", 0)
+        elseif rEvent[1] == "timer" then
+            if rEvent[2] == LokiTimer then
+                Logger.sendLoki()
+                LokiTimer = os.startTimer(LokiSleepyTime)
+            elseif rEvent[2] == TempoTimer then
+                Tracer.sendTempo()
+                TempoTimer = os.startTimer(TempoSleepyTime)
+            end
         end
     end
 end

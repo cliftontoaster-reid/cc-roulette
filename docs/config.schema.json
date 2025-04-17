@@ -89,6 +89,10 @@
         "loki": {
           "type": "string",
           "description": "The loki server to send logs to"
+        },
+        "tempo": {
+          "type": "string",
+          "description": "The tempo server to send traces to"
         }
       }
     }

@@ -272,7 +272,7 @@ end
 
 --- Sends the collected spans to the configured Tempo URL.
 ---@return boolean success True if the spans were sent successfully or if there were no spans to send, false otherwise.
-function Trace.send()
+function Trace.sendTempo()
     if not TEMPO_URL then
         Logger.error("Tempo URL is not set. Cannot send spans.")
         return false

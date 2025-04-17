@@ -17,6 +17,22 @@
     along with this library. If not, see <https://www.gnu.org/licenses/>.
 ]]
 
+---@class Logger
+---@field LEVELS table<string, { priority: number, color: number }> Log levels with priority and color.
+---@field cachedRequest LokiRequest The current batch of logs waiting to be sent.
+---@field setLokiURL fun(url: string) Sets the URL for the Loki logging endpoint.
+---@field getLokiURL fun(): string|nil Gets the currently configured Loki URL.
+---@field sendLogs fun() Sends the cached log entries to the configured Loki endpoint.
+---@field getTimestamp fun(): string Returns the current timestamp formatted as [YYYY-MM-DD HH:MM:SS].
+---@field debug fun(fmt: string, ...) Logs a message with DEBUG level.
+---@field info fun(fmt: string, ...) Logs a message with INFO level.
+---@field warning fun(fmt: string, ...) Logs a message with WARNING level.
+---@field error fun(fmt: string, ...) Logs a message with ERROR level.
+---@field success fun(fmt: string, ...) Logs a message with SUCCESS level.
+---@field getLogLevel fun(): string Gets the current minimum log level.
+---@field setLogLevel fun(level: string) Sets the minimum log level.
+---@field log fun(level: string, ...) Logs a message with the specified level.
+
 ---@class LokiRequest
 ---@field streams LokiStream[]
 ---@field streamMap table<string, number>

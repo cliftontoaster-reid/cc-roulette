@@ -58,6 +58,7 @@ local COLOR = {
 ---@param parentId string|nil Optional parent trace ID
 ---@return boolean inBounds True if coordinates are within monitor bounds
 local function isInBounds(x, y, parentId)
+	if mon == nil then return false end -- Add nil check
 	local tr = Tracer.new()
 	tr:setName("ring.isInBounds")
 	tr:addTag("x", string.format("%d", x))
@@ -81,6 +82,7 @@ end
 ---@param number number|nil Optional number to display in the element
 ---@param parentId string|nil Optional parent trace ID
 local function drawElement(x, y, color, number, parentId)
+	if mon == nil then return end -- Add nil check
 	local tr = Tracer.new()
 	tr:setName("ring.drawElement")
 	tr:addTag("x", string.format("%d", x))
@@ -125,6 +127,7 @@ end
 ---@param y number Top position
 ---@param parentId string|nil Optional parent trace ID
 local function drawBallElement(x, y, parentId)
+	if mon == nil then return end -- Add nil check
 	local tr = Tracer.new()
 	tr:setName("ring.drawBallElement")
 	tr:addTag("x", string.format("%d", x))
@@ -156,6 +159,7 @@ end
 ---@return number|nil x The x coordinate
 ---@return number|nil y The y coordinate
 local function numberToPos(number, parentId)
+	if mon == nil then return nil, nil end -- Add nil check
 	local tr = Tracer.new()
 	tr:setName("ring.numberToPos")
 	tr:addTag("number", string.format("%d", number))
@@ -199,6 +203,7 @@ end
 ---@param thickness number|nil Optional line thickness (defaults to 1)
 ---@param parentId string|nil Optional parent trace ID
 local function drawLine(startX, startY, endX, endY, color, thickness, parentId)
+	if mon == nil then return end -- Add nil check
 	local tr = Tracer.new()
 	tr:setName("ring.drawLine")
 	tr:addTag("startX", string.format("%d", startX))
@@ -282,6 +287,7 @@ end
 ---@param incrementY number Y increment between elements
 ---@param parentId string|nil Optional parent trace ID
 local function drawSequence(startNum, count, startX, startY, incrementX, incrementY, parentId)
+	if mon == nil then return end -- Add nil check (indirect usage via drawElement)
 	local tr = Tracer.new()
 	tr:setName("ring.drawSequence")
 	tr:addTag("startNum", string.format("%d", startNum))
@@ -309,6 +315,7 @@ end
 ---@param number number Roulette number position
 ---@param parentId string|nil Optional parent trace ID
 local function drawBall(number, parentId)
+	if mon == nil then return end -- Add nil check (indirect usage via drawElement/drawBallElement)
 	local tr = Tracer.new()
 	tr:setName("ring.drawBall")
 	tr:addTag("number", string.format("%d", number))
@@ -344,6 +351,7 @@ end
 ---@param startY number Starting Y position
 ---@param parentId string|nil Optional parent trace ID
 local function drawMiddleDecoration(startX, startY, parentId)
+	if mon == nil then return end -- Add nil check (indirect usage via drawLine/isInBounds)
 	local tr = Tracer.new()
 	tr:setName("ring.drawMiddleDecoration")
 	tr:addTag("startX", string.format("%d", startX))
@@ -412,6 +420,7 @@ end
 ---Draws the complete roulette ring
 ---@param parentId string|nil Optional parent trace ID
 local function drawRing(parentId)
+	if mon == nil then return end -- Add nil check
 	local tr = Tracer.new()
 	tr:setName("ring.drawRing")
 	if parentId then
@@ -471,6 +480,7 @@ end
 ---@param parentId string|nil Optional parent trace ID
 ---@return number The final ball position
 local function launchBall(force, parentId)
+	if mon == nil then return ballPos end -- Add nil check, return current pos
 	local tr = Tracer.new()
 	tr:setName("ring.launchBall")
 	tr:addTag("force", string.format("%d", force))

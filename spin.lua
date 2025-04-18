@@ -202,19 +202,35 @@ local function mainLoop()
 
     -- Handle redstone signal events
     local function handleRedstoneEvent()
+        local tr = Tracer.new()
+        tr:setName("event.redstone")
+        tr:addTag("device", config.devices.redstone)
+
         local redStreingth = redstone.getAnalogInput(config.devices.redstone)
         local id = redStreingth - config.devices.ivmanBigger
         if id < 0 then
             Logger.error("Redstone signal too low")
+            tr:addAnnotation("low signal")
+            Tracer.addSpan(tr:endSpan())
             return
         end
         -- Store the player id in currentBetter
         currentBetter = id
         Logger.info("Player " .. id .. " clicked on the button")
+
+        Tracer.addSpan(tr:endSpan())
     end
 
     -- Handle carpet monitor touch events
     local function handleCarpetTouch(x, y)
+        local tr = Tracer.new()
+        tr:setName("event.monitor_touch")
+        tr:addTag("device", config.devices.carpet)
+        tr:addTag("action", "bet")
+        tr:addTag("x", x)
+        tr:addTag("y", y)
+        tr:addTag("player", tostring(currentBetter))
+
         if currentBetter == -1 then
             Logger.error("No player detected")
             return
@@ -222,63 +238,100 @@ local function mainLoop()
 
         local ballance = iv.getMoneyInPlayer(currentBetter)
         if ballance == nil or ballance <= 0 then
-            Logger.error("Player " .. currentBetter .. " has no money")
+            Logger.error("Player " .. tostring(currentBetter) .. " has no money")
             Logger.debug("Player is " .. (iv.getPlayer(currentBetter) or ""))
+            tr:addAnnotation("no money")
+            Tracer.addSpan(tr:endSpan())
             return
         end
 
         local nbr = carpet.findClickedNumber(x, y)
         if nbr == nil then
             Logger.error("No number clicked")
+            tr:addAnnotation("no number clicked")
+            Tracer.addSpan(tr:endSpan())
             return
         end
 
         local res = iv.takeMoneyFromPlayer(currentBetter, 1)
         if res == nil then
-            Logger.error("Error taking money from player " .. currentBetter)
+            Logger.error("Error taking money from player " .. tostring(currentBetter))
+            tr:addAnnotation("error taking money")
+            Tracer.addSpan(tr:endSpan())
             return
         end
 
         local player = iv.getPlayer(currentBetter)
         carpet.addBet(1, ucolors[currentBetter + 1], player or "", nbr)
         Logger.info("Bet added successfully")
+
+        tr:addAnnotation("bet added")
         os.sleep(0.2)
+        Tracer.addSpan(tr:endSpan())
     end
 
     -- Handle ring monitor touch events
     local function handleRingTouch()
+        local tr = Tracer.new()
+        tr:setName("event.monitor_touch")
+        tr:addTag("device", config.devices.ring)
+        tr:addTag("player", tostring(currentBetter))
+        tr:addTag("action", "spin")
+
         local min, max = 150, 200
         local nbr = ring.launchBall(math.random(min, max))
         local bets = carpet.getBets()
 
         Logger.info("Running through " .. #bets .. " bets")
         for _, b in ipairs(bets) do
+            local ptr = Tracer.new()
+            ptr:setName("bet_check")
+            ptr:addTag("bet", tostring(b.number))
+            ptr:addTag("player", b.player)
+            ptr:addTag("color", tostring(b.color))
+            ptr:addTag("amount", tostring(b.amount))
+            ptr:addTag("winning_number", tostring(nbr))
+            ptr:setParentId(tr.traceId)
+
             Logger.debug("Checking bet for player " ..
                 b.player .. " on number " .. b.number .. " with color " .. b.color .. " and amount " .. b.amount)
             local payout = getPayout(b, nbr)
 
             if payout then
                 Logger.info("Payout for bet: " .. payout)
+                tr:addAnnotation("payout" .. tostring(payout))
                 local idx = iv.findPlayer(b.player)
                 if idx == nil then
                     Logger.error("Player " .. b.player .. " not found for payout")
+                    emergencyWrite(nbr, bets)
+                    ptr:addAnnotation("player not found")
+                    Tracer.addSpan(ptr:endSpan())
                 else
                     local res = iv.addMoneyToPlayer(idx - 1, payout)
                     if res == nil then
                         Logger.error("Failed to give money to player " .. b.player)
                         emergencyWrite(nbr, bets)
+                        ptr:addAnnotation("error giving money")
+                        Tracer.addSpan(ptr:endSpan())
                     else
                         Logger.info("Money added to player " .. b.player)
+                        ptr:addAnnotation("money added")
+                        Tracer.addSpan(ptr:endSpan())
                     end
                 end
                 Logger.info("Payout processed for player " .. b.player)
             else
                 Logger.info("No payout for bet")
+                ptr:addAnnotation("no payout")
+                Tracer.addSpan(ptr:endSpan())
             end
         end
         carpet.resetBets()
         carpet.update()
         Logger.info("Bets reset successfully")
+
+        tr:addAnnotation("spin finished")
+        Tracer.addSpan(tr:endSpan())
     end
 
     -- Handle monitor touch events

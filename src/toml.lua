@@ -27,6 +27,7 @@ TOML.parse = function(toml, options)
 	nl = nl .. "]"
 
 	-- stores text data
+	---@type number | string | nil
 	local buffer = ""
 
 	-- the current location within the string to parse
@@ -221,6 +222,7 @@ TOML.parse = function(toml, options)
 	end
 
 	local function parseNumber()
+		---@type string | number | nil
 		local num = ""
 		local exp
 		local date = false
@@ -269,7 +271,9 @@ TOML.parse = function(toml, options)
 		end
 
 		local float = false
-		if num:match("%.") then
+		if num == nil then
+			err("Invalid number")
+		elseif num:match("%.") then
 			float = true
 		end
 
@@ -340,6 +344,7 @@ TOML.parse = function(toml, options)
 	local function parseInlineTable()
 		step() -- skip opening brace
 
+		---@type number | string
 		local buffer = ""
 		local quoted = false
 		local tbl = {}
@@ -461,7 +466,10 @@ TOML.parse = function(toml, options)
 				if obj[buffer] then
 					err('Cannot redefine key "' .. buffer .. '"', true)
 				end
-				obj[buffer] = v.value
+				-- Ensure v is not nil before accessing v.value (already handled by outer 'if v then')
+				if buffer then
+					obj[buffer] = v.value
+				end
 			end
 
 			-- clear the buffer

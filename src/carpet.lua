@@ -18,6 +18,8 @@
 ]]
 
 local mon = nil
+local Logger = require("src.log")
+local Tracer = require("src.trace")
 
 ---@class Bet
 ---@field amount number
@@ -87,9 +89,21 @@ local layout = {
 ---@param nbr number The bet number to print
 ---@param idx number Where to start printing the bets
 ---@param posx number The x position to print the bets
+---@param parentId string|nil The parent trace ID for logging
 ---@return nil
-local function printBet(nbr, idx, posx)
+local function printBet(nbr, idx, posx, parentId)
+	local tr = Tracer.new()
+	tr:setName("carpet.printBet")
+	tr:addTag("nbr", string.format("%d", nbr))
+	tr:addTag("idx", string.format("%d", idx))
+	tr:addTag("posx", string.format("%d", posx))
+	if parentId then
+		tr:setParentId(parentId)
+	end
+
 	if mon == nil then
+		tr:addAnnotation("Monitor not initialized")
+		Tracer.addSpan(tr:endSpan())
 		return
 	end
 
@@ -97,14 +111,16 @@ local function printBet(nbr, idx, posx)
 
 	for _, v in pairs(bets) do
 		if v.number == nbr then
-			print("Match found: adding bet from " .. v.player .. " for " .. v.amount)
+			Logger.debug("Match found: adding bet from " .. v.player .. " for " .. v.amount)
 			table.insert(usedBets, v)
 		end
 	end
 
+	tr:addAnnotation(string.format("Found %d bets for number %d", #usedBets, nbr))
+
 	for i = 1, #usedBets do
 		local v = usedBets[i]
-		print(
+		Logger.debug(
 			"Printing bet "
 			.. i
 			.. " at position "
@@ -123,6 +139,7 @@ local function printBet(nbr, idx, posx)
 		mon.setBackgroundColour(colours.green)
 		mon.write(" " .. v.amount)
 	end
+	Tracer.addSpan(tr:endSpan())
 end
 
 ---@param item any The item (number or text) to display
@@ -137,9 +154,19 @@ local function formatDisplayText(item, width)
 end
 
 ---@param rowDef table The row definition containing position and items
+---@param parentId string|nil The parent trace ID for logging
 ---@return nil
-local function printRow(rowDef)
+local function printRow(rowDef, parentId)
+	local tr = Tracer.new()
+	tr:setName("carpet.printRow")
+	tr:addTag("rowPos", string.format("%d", rowDef.rowPos))
+	if parentId then
+		tr:setParentId(parentId)
+	end
+
 	if mon == nil then
+		tr:addAnnotation("Monitor not initialized")
+		Tracer.addSpan(tr:endSpan())
 		return
 	end
 
@@ -161,7 +188,7 @@ local function printRow(rowDef)
 
 		-- Determine the bet number - either the number itself or its special value
 		local betNumber = type(item) == "number" and item or specialValues[item]
-		printBet(betNumber, rowDef.rowPos + 2, posx)
+		printBet(betNumber, rowDef.rowPos + 2, posx, tr.traceId) -- Pass traceId
 	end
 
 	-- Print the special column if specified
@@ -172,12 +199,22 @@ local function printRow(rowDef)
 		-- Use specialWidth if defined, otherwise fall back to itemWidth
 		local displayWidth = rowDef.specialWidth or rowDef.itemWidth
 		mon.write(formatDisplayText(rowDef.special, displayWidth))
-		printBet(specialValues[rowDef.special], rowDef.rowPos + 2, posx)
+		printBet(specialValues[rowDef.special], rowDef.rowPos + 2, posx, tr.traceId) -- Pass traceId
 	end
+	Tracer.addSpan(tr:endSpan())
 end
 
-local function update()
+---@param parentId string|nil The parent trace ID for logging
+local function update(parentId)
+	local tr = Tracer.new()
+	tr:setName("carpet.update")
+	if parentId then
+		tr:setParentId(parentId)
+	end
+
 	if mon == nil then
+		tr:addAnnotation("Monitor not initialized")
+		Tracer.addSpan(tr:endSpan())
 		return
 	end
 
@@ -194,16 +231,26 @@ local function update()
 
 	-- Print all rows according to layout
 	for _, rowDef in ipairs(layout) do
-		printRow(rowDef)
+		printRow(rowDef, tr.traceId) -- Pass traceId
 	end
+	Tracer.addSpan(tr:endSpan())
 end
 
 --- Finds the clicked number or special value based on the x and y coordinates in the layout.
 ---
 ---@param x number The x-coordinate of the click position.
 ---@param y number The y-coordinate of the click position.
+---@param parentId string|nil The parent trace ID for logging
 ---@return number|nil Returns the number corresponding to the clicked item, or a special value if the special column was clicked.
-local function findClickedNumber(x, y)
+local function findClickedNumber(x, y, parentId)
+	local tr = Tracer.new()
+	tr:setName("carpet.findClickedNumber")
+	tr:addTag("x", string.format("%d", x))
+	tr:addTag("y", string.format("%d", y))
+	if parentId then
+		tr:setParentId(parentId)
+	end
+
 	-- Check each row in the layout to find what was clicked
 	for _, rowDef in ipairs(layout) do
 		-- Check if click is within the row's vertical bounds
@@ -216,7 +263,10 @@ local function findClickedNumber(x, y)
 
 				-- If click is within this item's bounds
 				if x >= itemX and x < itemX + itemWidth then
-					return type(item) == "number" and item or specialValues[item]
+					local clickedItem = type(item) == "number" and item or specialValues[item]
+					tr:addAnnotation(string.format("Clicked item %s (value %d)", tostring(item), clickedItem))
+					Tracer.addSpan(tr:endSpan())
+					return clickedItem
 				end
 			end
 
@@ -227,13 +277,18 @@ local function findClickedNumber(x, y)
 
 				-- If click is within the special column bounds
 				if x >= specialX and x < specialX + specialWidth then
-					return specialValues[rowDef.special]
+					local clickedItem = specialValues[rowDef.special]
+					tr:addAnnotation(string.format("Clicked special %s (value %d)", rowDef.special, clickedItem))
+					Tracer.addSpan(tr:endSpan())
+					return clickedItem
 				end
 			end
 		end
 	end
 
 	-- No valid area was clicked
+	tr:addAnnotation("No valid area clicked")
+	Tracer.addSpan(tr:endSpan())
 	return nil
 end
 
@@ -241,9 +296,19 @@ end
 ---@param color number The color of the bet
 ---@param player string The player who placed the bet
 ---@param number number The number to bet on
+---@param parentId string|nil The parent trace ID for logging
 ---@return nil
-local function addBet(amount, color, player, number)
-	local Logger = require("src.log")
+local function addBet(amount, color, player, number, parentId)
+	local tr = Tracer.new()
+	tr:setName("carpet.addBet")
+	tr:addTag("amount", string.format("%d", amount))
+	tr:addTag("color", string.format("%d", color))
+	tr:addTag("player", player)
+	tr:addTag("number", string.format("%d", number))
+	if parentId then
+		tr:setParentId(parentId)
+	end
+
 	Logger.info("Adding bet: " .. amount .. " from player " .. player .. " on number " .. number)
 
 	-- Check if the player has already placed a bet on this number
@@ -254,69 +319,118 @@ local function addBet(amount, color, player, number)
 		if v.player == player and v.number == number then
 			existingBet = v
 			Logger.info("Found existing bet from " .. player .. " on number " .. number)
+			tr:addAnnotation("Found existing bet")
 			break
 		end
 	end
 
 	if existingBet then
 		Logger.info("Updating existing bet from " ..
-		player .. " from " .. existingBet.amount .. " to " .. (existingBet.amount + amount))
+			player .. " from " .. existingBet.amount .. " to " .. (existingBet.amount + amount))
 		existingBet.amount = existingBet.amount + amount
+		tr:addAnnotation("Updated existing bet")
 	else
 		Logger.info("Creating new bet for " .. player .. " of " .. amount .. " on number " .. number)
 		table.insert(bets, { amount = amount, color = color, player = player, number = number })
+		tr:addAnnotation("Created new bet")
 	end
-	update()
+	update(tr.traceId) -- Pass traceId
 	Logger.info("Bet added successfully")
+	Tracer.addSpan(tr:endSpan())
 end
 
 local grid = {}
 
 ---@param monitorName string
-function grid.init(monitorName)
+---@param parentId string|nil The parent trace ID for logging
+function grid.init(monitorName, parentId)
+	local tr = Tracer.new()
+	tr:setName("carpet.init")
+	tr:addTag("monitorName", monitorName)
+	if parentId then
+		tr:setParentId(parentId)
+	end
+
 	mon = peripheral.wrap(monitorName)
-	print("Looking for monitor peripheral...")
+	Logger.info("Looking for monitor peripheral...")
 
 	if mon == nil then
+		tr:addAnnotation("Monitor not found")
+		Tracer.addSpan(tr:endSpan())
 		error("Monitor not found", 0)
 		return
 	end
-	print("Monitor found: " .. peripheral.getName(mon))
+	Logger.info("Monitor found: " .. peripheral.getName(mon))
+	tr:addAnnotation("Monitor found: " .. peripheral.getName(mon))
 
 	if not mon.isColour() then
+		tr:addAnnotation("Monitor is not color")
+		Tracer.addSpan(tr:endSpan())
 		error("Monitor is not color", 0)
 		return
 	end
-	print("Monitor supports color")
+	Logger.info("Monitor supports color")
+	tr:addAnnotation("Monitor supports color")
 
-	print("Setting monitor text scale to 0.7")
+	Logger.info("Setting monitor text scale to 0.7")
 	mon.setTextScale(0.7)
 
 	local w, h = mon.getSize()
-	print("Monitor size: " .. w .. "x" .. h)
-	update()
+	Logger.info("Monitor size: " .. w .. "x" .. h)
+	tr:addAnnotation(string.format("Monitor size: %dx%d", w, h))
+	update(tr.traceId) -- Pass traceId
+	Tracer.addSpan(tr:endSpan())
 end
 
-local function removeBet(bet)
+---@param bet Bet The bet to remove
+---@param parentId string|nil The parent trace ID for logging
+local function removeBet(bet, parentId)
+	local tr = Tracer.new()
+	tr:setName("carpet.removeBet")
+	tr:addTag("player", bet.player or "nil")
+	tr:addTag("amount", string.format("%d", bet.amount))
+	tr:addTag("number", string.format("%d", bet.number))
+	if parentId then
+		tr:setParentId(parentId)
+	end
+
+	local removed = false
 	for i, v in ipairs(bets) do
 		if v == bet then
 			table.remove(bets, i)
-			return
+			removed = true
+			tr:addAnnotation("Bet removed")
+			break
 		end
 	end
-	update()
+	if not removed then
+		tr:addAnnotation("Bet not found")
+	end
+	update(tr.traceId) -- Pass traceId
+	Tracer.addSpan(tr:endSpan())
 end
 
 grid.update = update
 grid.getBets = function()
+	-- No tracing needed for simple getter unless complex logic is added
 	return bets
 end
 grid.findClickedNumber = findClickedNumber
 grid.addBet = addBet
 grid.removeBet = removeBet
 
-function grid.resetBets()
+---@param parentId string|nil The parent trace ID for logging
+function grid.resetBets(parentId)
+	local tr = Tracer.new()
+	tr:setName("carpet.resetBets")
+	if parentId then
+		tr:setParentId(parentId)
+	end
 	bets = {}
+	tr:addAnnotation("Bets reset")
+	Tracer.addSpan(tr:endSpan())
+	-- Optionally call update if the visual state needs immediate clearing
+	-- update(tr.traceId)
 end
 
 return grid

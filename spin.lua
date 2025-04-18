@@ -95,6 +95,7 @@ local function defaultConfig()
         },
         debug = {
             loki = nil,
+            tempo = nil,
         },
     }
 

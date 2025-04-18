@@ -24,21 +24,29 @@
 ---@field name string | nil The logical operation this span represents in lowercase (e.g. rpc method).
 ---@field timestamp number | nil Epoch microseconds of the start of this span, possibly absent if incomplete.
 ---@field duration number | nil Duration in microseconds of the critical path, if known. Durations of less than one are rounded up. Duration of children can be longer than their parents due to asynchronous operations.
----@field kind "CLIENT" | "SERVER" | "PRODUCER" | "CONSUMER" When present, kind clarifies timestamp, duration and remoteEndpoint. When absent, the span is local or incomplete. Unlike client and server, there is no direct critical path latency relationship between producer and consumer spans.
+---@field kind "CLIENT" | "SERVER" | "PRODUCER" | "CONSUMER" | nil When present, kind clarifies timestamp, duration and remoteEndpoint. When absent, the span is local or incomplete. Unlike client and server, there is no direct critical path latency relationship between producer and consumer spans.
 ---@field localEndpoint ZipkinEndpoint | nil The network context of a node in the service graph
 ---@field remoteEndpoint ZipkinEndpoint | nil The network context of a node in the service graph
 ---@field annotations ZipkinAnnotation[] | nil Associates events that explain latency with the time they happened.
 ---@field tags table<string, string> | nil Adds context to a span, for search, viewing and analysis. For example, a key "your_app.version" would let you lookup traces by version. A tag "sql.query" isn't searchable, but it can help in debugging when viewing a trace.
-
----@class ZipkinAnnotation
----@field timestamp number Epoch microseconds of this event. For example, 1502787600000000 corresponds to 2017-08-15 09:00 UTC This value should be set directly by instrumentation, using the most precise value possible. For example, gettimeofday or multiplying epoch millis by 1000.
----@field value string Usually a short tag indicating an event, like "error". While possible to add larger data, such as garbage collection details, low cardinality event names both keep the size of spans down and also are easy to search against.
+---@field setParentId fun(self: ZipkinSpan, parentId: string): ZipkinSpan Sets the parentId of the span.
+---@field setName fun(self: ZipkinSpan, name: string): ZipkinSpan Sets the name of the span operation.
+---@field setKind fun(self: ZipkinSpan, kind: "CLIENT" | "SERVER" | "PRODUCER" | "CONSUMER"): ZipkinSpan Sets the kind of the span.
+---@field setLocalEndpoint fun(self: ZipkinSpan, serviceName: string|nil, ipv4: string|nil, ipv6: string|nil, port: number|nil): ZipkinSpan Sets the local endpoint of the span.
+---@field setRemoteEndpoint fun(self: ZipkinSpan, serviceName: string|nil, ipv4: string|nil, ipv6: string|nil, port: number|nil): ZipkinSpan Sets the remote endpoint of the span.
+---@field addAnnotation fun(self: ZipkinSpan, value: string): ZipkinSpan Adds an annotation event to the span.
+---@field addTag fun(self: ZipkinSpan, key: string, value: string): ZipkinSpan Adds a key-value tag to the span.
+---@field endSpan fun(self: ZipkinSpan): ZipkinSpan Ends the span by calculating and setting its duration.
 
 ---@class ZipkinEndpoint
 ---@field serviceName string | nil Lower-case label of this node in the service graph, such as "favstar". Leave absent if unknown.
 ---@field ipv4 string | nil The text representation of the primary IPv4 address associated with this connection. Ex. 192.168.99.100 Absent if unknown.
 ---@field ipv6 string | nil The text representation of the primary IPv6 address associated with a connection. Ex. 2001:db8::c001 Absent if unknown.
 ---@field port number | nil Depending on context, this could be a listen port or the client-side of a socket. Absent if unknown. Please don't set to zero.
+
+---@class ZipkinAnnotation
+---@field timestamp number Epoch microseconds of this event. For example, 1502787600000000 corresponds to 2017-08-15 09:00 UTC This value should be set directly by instrumentation, using the most precise value possible. For example, gettimeofday or multiplying epoch millis by 1000.
+---@field value string Usually a short tag indicating an event, like "error". While possible to add larger data, such as garbage collection details, low cardinality event names both keep the size of spans down and also are easy to search against.
 
 local expect = require("cc.expect").expect
 local Logger = require("src.log")
